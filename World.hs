@@ -1,5 +1,6 @@
 module World where
 import Data.List
+import System.Random
 
 data Object = Obj { obj_name :: String,
                     obj_longname :: String,
@@ -34,7 +35,8 @@ data GameData = GameData { location_id :: String, -- where player is
                            dressed :: Bool, -- player is dressed
                            finished :: Bool, -- set to True at the end
                            gotKeys :: Bool, -- set to True when keys collected
-                           brushed :: Bool -- teeth have been brushed
+                           brushed :: Bool, -- teeth have been brushed
+                           over :: Bool
                          }
 
 won :: GameData -> Bool
@@ -100,7 +102,6 @@ livingroom = Room "You are in the living room. "
 wardrobe = Room "You are in the wardrobe. "
                [Exit "west" "To the west is the bedroom. " "bedroom"]
                []
-
 bathroom = Room "You are in the bathroom. "
                [Exit "south" "To the south is the bedroom. " "bedroom"]
                [toothbrush]
@@ -125,7 +126,7 @@ gameworld = [("bedroom", bedroom),
              ("wardrobe", wardrobe)]
 
 initState :: GameData
-initState = GameData "bedroom" gameworld [] False False False False False False False
+initState = GameData "bedroom" gameworld [] False False False False False False False False
 
 {- Return the room the player is currently in. -}
 

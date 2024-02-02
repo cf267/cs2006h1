@@ -64,7 +64,8 @@ executable adventure
 
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.14 && <4.15,
-                       haskeline >=0.8 && <0.9
+                       haskeline >=0.8 && <0.9,
+                       random
 
   -- Directories containing source files.
   -- hs-source-dirs:

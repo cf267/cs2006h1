@@ -29,12 +29,12 @@ version :: Version
 version = Version [0,1,0,0] []
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 
-bindir     = "/home/mc431/.cabal/bin"
-libdir     = "/home/mc431/.cabal/lib/x86_64-linux-ghc-8.10.7/adventure-0.1.0.0-inplace-adventure"
-dynlibdir  = "/home/mc431/.cabal/lib/x86_64-linux-ghc-8.10.7"
-datadir    = "/home/mc431/.cabal/share/x86_64-linux-ghc-8.10.7/adventure-0.1.0.0"
-libexecdir = "/home/mc431/.cabal/libexec/x86_64-linux-ghc-8.10.7/adventure-0.1.0.0"
-sysconfdir = "/home/mc431/.cabal/etc"
+bindir     = "/home/cf267/.cabal/bin"
+libdir     = "/home/cf267/.cabal/lib/x86_64-linux-ghc-8.10.7/adventure-0.1.0.0-inplace-adventure"
+dynlibdir  = "/home/cf267/.cabal/lib/x86_64-linux-ghc-8.10.7"
+datadir    = "/home/cf267/.cabal/share/x86_64-linux-ghc-8.10.7/adventure-0.1.0.0"
+libexecdir = "/home/cf267/.cabal/libexec/x86_64-linux-ghc-8.10.7/adventure-0.1.0.0"
+sysconfdir = "/home/cf267/.cabal/etc"
 
 getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: IO FilePath
 getBinDir = catchIO (getEnv "adventure_bindir") (\_ -> return bindir)

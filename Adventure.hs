@@ -3,6 +3,7 @@ module Main where
 import World
 import Actions
 
+import System.Console.Haskeline
 import Control.Monad
 import System.IO
 import System.Exit
@@ -26,16 +27,16 @@ openingMessage = "\nYou have woken up. Complete the following tasks to win the g
 {- Given a game state, and user input (as a list of words) return a 
    new game state and a message for the user. -}
 
-funct :: String -> String -> Maybe Cmd
-funct act arg = case actions act of
-                        Just fn -> addArg fn arg
-                        Nothing -> Nothing
+-- funct :: String -> String -> Maybe Cmd
+-- funct act arg = case actions act of
+--                         Just fn -> addArg fn arg
+--                         Nothing -> Nothing
                         
 
-addArg :: Action -> String -> Maybe Cmd
-addArg fn arg = case arguments arg of
-                        Just gn -> (fn, gn)
-                        Nothing -> Nothing
+-- addArg :: Action -> String -> Maybe Cmd
+-- addArg fn arg = case arguments arg of
+--                         Just gn -> (fn, gn)
+                        -- Nothing -> Nothing
 
 process :: GameData -> [String] -> (GameData, String)
 --split the command into an action and an argument (direction, obj etc.)
@@ -48,26 +49,27 @@ process state [cmd]     = case commands cmd of
                             Nothing -> (state, "I don't understand")
 process state _ = (state, "I don't understand")
 
-repl :: GameData -> IO GameData
+repl :: GameData -> InputT IO GameData
 repl state | finished state = return state
-repl state = do print state
-                putStr "What now? "
-                hFlush stdout
-                cmd <- getLine
-                let (state', msg) = process state {-need parser here to turn string into command-}(words cmd)
-                putStrLn msg
-                if (won state') then 
-                     do putStrLn winmessage
-                        return state'
-                else if (lockedOut state') then 
-                     do putStrLn losemessage
-                        return state'
-                else if (won state' && brushed state' == False) then
-                     do putStrLn brushTeethMessage
-                        return state'
-                else repl state'
+repl state = do outputStrLn (show state)
+                maybeCmd <- getInputLine "What now? "
+                case maybeCmd of
+                  Nothing -> repl state
+                  Just line -> do
+                     let (state', msg) = process state {-need parser here to turn string into command-}(words line)
+                     outputStrLn msg
+                     if (won state') then 
+                           do outputStrLn winmessage
+                              return state'
+                     else if (lockedOut state') then 
+                           do outputStrLn losemessage
+                              return state'
+                     else if (won state' && brushed state' == False) then
+                           do outputStrLn brushTeethMessage
+                              return state'
+                     else repl state'
 
 main :: IO ()
-main = do putStrLn openingMessage
-          repl initState
-          return ()
+main = runInputT defaultSettings (repl initState) >> return ()
+
+       

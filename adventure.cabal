@@ -57,6 +57,7 @@ executable adventure
   -- Modules included in this executable, other than Main.
   other-modules:       Actions
                        World
+                       Parsing
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:

@@ -2,6 +2,7 @@ module Main where
 
 import World
 import Actions
+import Parsing
 
 import System.Console.Haskeline
 import Control.Monad
@@ -56,7 +57,7 @@ repl state = do outputStrLn (show state)
                 case maybeCmd of
                   Nothing -> repl state
                   Just line -> do
-                     let (state', msg) = process state {-need parser here to turn string into command-}(words line)
+                     let (state', msg) = process state (tokenizeWords line)
                      outputStrLn msg
                      if (won state') then 
                            do outputStrLn winmessage
@@ -73,3 +74,10 @@ main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()
 
        
+wordParser :: Parser [String]
+wordParser = many (token ident)
+
+tokenizeWords :: String -> [String]
+tokenizeWords input = case parse wordParser input of
+  [(words, _)] -> words
+  _            -> []

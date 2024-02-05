@@ -22,6 +22,28 @@
   (major1) == 4 && (major2) == 14 && (minor) <= 3)
 #endif /* MIN_VERSION_base */
 
+/* package haskeline-0.8.2 */
+#ifndef VERSION_haskeline
+#define VERSION_haskeline "0.8.2"
+#endif /* VERSION_haskeline */
+#ifndef MIN_VERSION_haskeline
+#define MIN_VERSION_haskeline(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  8 || \
+  (major1) == 0 && (major2) == 8 && (minor) <= 2)
+#endif /* MIN_VERSION_haskeline */
+
+/* package random-1.2.1.1 */
+#ifndef VERSION_random
+#define VERSION_random "1.2.1.1"
+#endif /* VERSION_random */
+#ifndef MIN_VERSION_random
+#define MIN_VERSION_random(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  2 || \
+  (major1) == 1 && (major2) == 2 && (minor) <= 1)
+#endif /* MIN_VERSION_random */
+
 /* tool gcc-11 */
 #ifndef TOOL_VERSION_gcc
 #define TOOL_VERSION_gcc "11"

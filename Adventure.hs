@@ -1,3 +1,6 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Main where
 
 import World
@@ -9,6 +12,9 @@ import Control.Monad
 import System.IO
 import System.Exit
 
+import Test.QuickCheck
+import Test.QuickCheck.All
+
 winmessage = "Congratulations, you have made it out of the house.\n" ++
              "Now go to your lectures..."
 
@@ -17,15 +23,13 @@ brushTeethMessage = "Congratulations, you have made it out of the house.\n" ++
 
 losemessage = "NOO! you forgot your house keys and have been LOCKED OUTTTT!!\n" ++
               "Well that the day ruined..."
-              
+
 openingMessage = "\nYou have woken up. Complete the following tasks to win the game: \n" ++
                  "- Find your clothes around the house and get dressed\n" ++
                  "- Drink some coffee\n" ++
                  "- Brush your teeth\n" ++
                  "- Collect your keys and laptop\n" ++
                  "- Leave the house for your lectures\n"
-
-darkMessage = "You have hit your head on the doorframe, why would you wander around in the dark?"
 
 {- Given a game state, and user input (as a list of words) return a 
    new game state and a message for the user. -}
@@ -34,7 +38,7 @@ darkMessage = "You have hit your head on the doorframe, why would you wander aro
 -- funct act arg = case actions act of
 --                         Just fn -> addArg fn arg
 --                         Nothing -> Nothing
-                        
+
 
 -- addArg :: Action -> String -> Maybe Cmd
 -- addArg fn arg = case arguments arg of
@@ -70,15 +74,33 @@ repl state = do outputStrLn (show state)
                      else if (won state' && brushed state' == False) then
                            do outputStrLn brushTeethMessage
                               return state'
-                     else if (over state') then
-                           do outputStrLn darkMessage
-                              return state'
                      else repl state'
 
 main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()
 
-       
+prop_validMove :: (String, Room) -> Bool
+prop_validMove (dir, rm) = case move dir rm of
+                        Just _ -> True
+                        Nothing -> False
+
+prop_objectFound :: (String, Room) -> Bool
+prop_objectFound (obj, rm) 
+ | objectExists = True
+ | otherwise = False
+ where 
+   objectExists = objectHere obj rm
+
+validMove :: Gen (String, Room)
+validMove = elements [("north", bedroom), ("east", bedroom), ("down", bedroom), ("east", hall), ("up", hall), ("south", kitchen), ("west", kitchen), ("north", livingroom), ("south", bathroom), ("west", wardrobe)]
+
+validRoomObject :: Gen (String, Room)
+validRoomObject = elements [("mug", bedroom), ("laptop", bedroom), ("jeans", bedroom), ("trainers", hall), ("coffee", kitchen), ("keys", livingroom), ("hoodie", livingroom), ("toothbrush", bathroom)]
+
+runTests = do 
+           quickCheck (forAll validMove prop_validMove)
+           quickCheck (forAll validRoomObject prop_objectFound)
+
 wordParser :: Parser [String]
 wordParser = many (token ident)
 

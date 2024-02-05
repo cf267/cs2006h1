@@ -1,114 +1,144 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
+module World where
+import Data.List
 
-module Main where
+data Object = Obj { obj_name :: String,
+                    obj_longname :: String,
+                    obj_desc :: String }
+   deriving Eq
 
-import World
-import Actions
-import Parsing
+instance Show Object where
+   show obj = obj_longname obj
 
-import System.Console.Haskeline
-import Control.Monad
-import System.IO
-import System.Exit
+data Exit = Exit { exit_dir :: String,
+                   exit_desc :: String,
+                   room :: String }
+   deriving Eq
 
-import Test.QuickCheck
-import Test.QuickCheck.All
+data Room = Room { room_desc :: String,
+                   exits :: [Exit],
+                   objects :: [Object] }
+   deriving Eq
 
-winmessage = "Congratulations, you have made it out of the house.\n" ++
-             "Now go to your lectures..."
+data Direction = North | South | East | West | Out | Up | Down -- in 
+   deriving (Read, Eq, Enum)
 
-brushTeethMessage = "Congratulations, you have made it out of the house.\n" ++
-                   "But you forgot to brush your teeth! Now you have to go to lectures with stinky breath...."
+data Arg = Object | Direction | String
+   deriving (Read, Eq, Enum)
 
-losemessage = "NOO! you forgot your house keys and have been LOCKED OUTTTT!!\n" ++
-              "Well that the day ruined..."
-              
-openingMessage = "\nYou have woken up. Complete the following tasks to win the game: \n" ++
-                 "- Find your clothes around the house and get dressed\n" ++
-                 "- Drink some coffee\n" ++
-                 "- Brush your teeth\n" ++
-                 "- Collect your keys and laptop\n" ++
-                 "- Leave the house for your lectures\n"
+data Cmd = Go Direction | Get Object | Put Object | Pour Object | Drink Object
+   deriving Eq
 
-{- Given a game state, and user input (as a list of words) return a 
-   new game state and a message for the user. -}
+data GameData = GameData { location_id :: String, -- where player is
+                           world :: [(String, Room)],
+                           inventory :: [Object], -- objects player has
+                           poured :: Bool, -- coffee is poured
+                           caffeinated :: Bool, -- coffee is drunk
+                           lightson :: Bool, -- lights are switched on
+                           dressed :: Bool, -- player is dressed
+                           finished :: Bool, -- set to True at the end
+                           gotKeys :: Bool, -- set to True when keys collected
+                           brushed :: Bool -- teeth have been brushed
+                         }
 
--- funct :: String -> String -> Maybe Cmd
--- funct act arg = case actions act of
---                         Just fn -> addArg fn arg
---                         Nothing -> Nothing
-                        
+won :: GameData -> Bool
+won gd = location_id gd == "street" && gotKeys gd
 
--- addArg :: Action -> String -> Maybe Cmd
--- addArg fn arg = case arguments arg of
---                         Just gn -> (fn, gn)
-                        -- Nothing -> Nothing
+lockedOut :: GameData -> Bool
+lockedOut gd = location_id gd == "street" && gotKeys gd == False
 
-process :: GameData -> [String] -> (GameData, String)
-process state [cmd,arg] = case actions cmd of
-                              Just fn -> case objectOptions arg of 
-                                    Just obj -> fn obj state 
-                                    Nothing -> (state, "I don't understand") 
-                              Nothing -> case moves cmd of 
-                                    Just fn -> case directions arg of 
-                                          Just dir -> fn dir state 
-                                          Nothing -> (state, "I don't understand") 
-                                    Nothing -> (state, "I don't understand") 
-process state [cmd]     = case commands cmd of
-                            Just fn -> fn state
-                            Nothing -> (state, "I don't understand")
-process state _ = (state, "I don't understand")
 
-repl :: GameData -> InputT IO GameData
-repl state | finished state = return state
-repl state = do outputStrLn (show state)
-                maybeCmd <- getInputLine "What now? "
-                case maybeCmd of
-                  Nothing -> repl state
-                  Just line -> do
-                     let (state', msg) = process state (tokenizeWords line)
-                     outputStrLn msg
-                     if (won state') then 
-                           do outputStrLn winmessage
-                              return state'
-                     else if (lockedOut state') then 
-                           do outputStrLn losemessage
-                              return state'
-                     else if (won state' && brushed state' == False) then
-                           do outputStrLn brushTeethMessage
-                              return state'
-                     else repl state'
+instance Show Room where
+    show (Room desc exits objs) = desc ++ "\n" ++ concatMap exit_desc exits ++
+                                  showInv objs
+       where showInv [] = ""
+             showInv xs = "\n\nYou can see: " ++ showInv' xs
+             showInv' [x] = show x
+             showInv' (x:xs) = show x ++ ", " ++ showInv' xs
+                                  
+hideInv :: Room -> String 
+hideInv (Room desc exits objs) = desc ++ "\n" ++ concatMap exit_desc exits ++ "\n\nLights are off, you cannot see anything."           
 
-main :: IO ()
-main = runInputT defaultSettings (repl initState) >> return ()
+instance Show GameData where
+   show gd = if lightson gd then show (getCurrentRoom gd) else hideInv (getCurrentRoom gd)
 
--- prop_validMove :: (Direction, Room) -> Bool
--- prop_validMove (dir, rm) = case move dir rm of
---                         Just _ -> True
---                         Nothing -> False
+-- Things which do something to an object and update the game state
+type Action  = Object -> GameData -> (GameData, String) 
 
--- prop_objectFound :: (Object, Room) -> Bool
--- prop_objectFound (obj, rm) 
---  | objectExists = True
---  | otherwise = False
---  where 
---    objectExists = objectHere obj rm
+-- Takes a direction
+type Move = Direction -> GameData -> (GameData, String)
 
--- validMove :: Gen (Direction, Room)
--- validMove = elements [("north", bedroom), ("east", bedroom), ("down", bedroom), ("east", hall), ("up", hall), ("south", kitchen), ("west", kitchen), ("north", livingroom), ("south", bathroom), ("west", wardrobe)]
+-- Things which just update the game state
+type Command = GameData -> (GameData, String)
 
--- validRoomObject :: Gen (Object, Room)
--- validRoomObject = elements [("mug", bedroom), ("laptop", bedroom), ("jeans", bedroom), ("trainers", hall), ("coffee", kitchen), ("keys", livingroom), ("hoodie", livingroom), ("toothbrush", bathroom)]
+mug, fullmug, coffeepot, keys, laptop, toothbrush, jeans, trainers, hoodie :: Object
+mug       = Obj "mug" "a coffee mug" "A coffee mug"
+fullmug   = Obj "mug" "a full coffee mug" "A coffee mug containing freshly brewed coffee"
+coffeepot = Obj "coffee" "a pot of coffee" "A pot containing freshly brewed coffee"
+keys = Obj "keys" "front door keys" "A set of keys to open the front door"
+laptop = Obj "laptop" "a work laptop" "A laptop for making lecture notes"
+toothbrush = Obj "toothbrush" "a toothbrush" "A toothbrush for getting rid of smelly breath"
+jeans = Obj "jeans" "a pair of jeans" "A pair of distressed levi jeans"
+trainers = Obj "trainers" "a pair of trainers" "A pair of Adidas sambas"
+hoodie = Obj "hoodie" "a hoodie" "A vintage nike sweatshirt"
 
--- runTests = do 
---            quickCheck (forAll validMove prop_validMove)
---            quickCheck (forAll validRoomObject prop_objectFound)
+bedroom, kitchen, hall, street, livingroom, wardrobe, bathroom :: Room
 
-wordParser :: Parser [String]
-wordParser = many (token ident)
+bedroom = Room "You are in the bedroom. "
+               [Exit "north" "To the north is a bathroom. " "bathroom",
+                Exit "east" "To the east is the wardrobe. " "wardrobe",
+                Exit "down" "Down the stairs is the hallway. " "hallway"]
+               [mug, laptop, jeans]
 
-tokenizeWords :: String -> [String]
-tokenizeWords input = case parse wordParser input of
-  [(words, _)] -> words
-  _            -> []
+kitchen = Room "You are in the kitchen. "
+               [Exit "south" "To the south is the living room. " "living room",
+                Exit "west" "To the west is a hallway. " "hall"]
+               [coffeepot]
+
+hall = Room "You are in the hallway. The front door is closed. " 
+            [Exit "east" "To the east is the kitchen. " "kitchen",
+             Exit "up" "Up the stairs is the bedroom. " "bedroom"]
+            [trainers]
+
+livingroom = Room "You are in the living room. "
+               [Exit "north" "To the north is the kitchen. " "kitchen"]
+               [keys, hoodie]
+
+wardrobe = Room "You are in the wardrobe. "
+               [Exit "west" "To the west is the bedroom. " "bedroom"]
+               []
+
+bathroom = Room "You are in the bathroom. "
+               [Exit "south" "To the south is the bedroom. " "bedroom"]
+               [toothbrush]
+
+
+-- New data about the hall for when we open the door
+
+openedhall = "You are in the hallway. The front door is open. "
+openedexits = [Exit "east" "To the east is a kitchen. " "kitchen",
+               Exit "out" "You can go outside. " "street"]
+
+street = Room "You have made it out of the house."
+              [Exit "in" "You can go back inside if you like. " "hall"]
+              []
+
+gameworld = [("bedroom", bedroom),
+             ("kitchen", kitchen),
+             ("hall", hall),
+             ("street", street),
+             ("living room", livingroom),
+             ("bathroom", bathroom),
+             ("wardrobe", wardrobe)]
+
+initState :: GameData
+initState = GameData "bedroom" gameworld [] False False False False False False False
+
+{- Return the room the player is currently in. -}
+
+getRoomData :: GameData -> Room
+getRoomData gd = maybe undefined id (lookup (location_id gd) (world gd))
+
+getCurrentRoom :: GameData -> Room
+getCurrentRoom gd = case find (\(x,_) -> x == (location_id gd)) (world gd) of
+                           Just (_,room) -> room
+                           Nothing -> bedroom

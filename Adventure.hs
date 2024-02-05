@@ -31,6 +31,8 @@ openingMessage = "\nYou have woken up. Complete the following tasks to win the g
                  "- Collect your keys and laptop\n" ++
                  "- Leave the house for your lectures\n"
 
+darkMessage = "You hit your head, why would you try and wonder round in the dark?"
+
 {- Given a game state, and user input (as a list of words) return a 
    new game state and a message for the user. -}
 
@@ -77,6 +79,9 @@ repl state = do outputStrLn (show state)
                               return state'
                      else if (won state' && brushed state' == False) then
                            do outputStrLn brushTeethMessage
+                              return state'
+                     else if (gameFinished state') then
+                           do outputStrLn darkMessage
                               return state'
                      else repl state'
 

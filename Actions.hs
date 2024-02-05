@@ -135,6 +135,9 @@ carrying gd obj = elem obj (inventory gd)
 collectKeys ::GameData -> GameData
 collectKeys gd = gd {gotKeys = True}
 
+dropKeys ::GameData -> GameData
+dropKeys gd = gd {gotKeys = False}
+
 
 {-
 Define the "go" action. Given a direction and a game state, update the game
@@ -149,9 +152,13 @@ e.g.
 -}
 
 go :: Move
-go dir state = case (move dir (getCurrentRoom state)) of
-                  Just x -> (state { location_id = x}, "OK")
-                  Nothing -> (state, "Error: Cannot move in specified direction")
+go dir state 
+   | (lightson state) == False = (newState,"OK")
+   | otherwise = case (move dir (getCurrentRoom state)) of
+                     Just x -> (state { location_id = x}, "OK")
+                     Nothing -> (state, "Error: Cannot move in specified direction")
+   where 
+      newState=(state {gameFinished = True})
 
 {- Remove an item from the current room, and put it in the player's inventory.
    This should only work if the object is in the current room. Use 'objectHere'
@@ -186,6 +193,7 @@ get obj state
 
 put :: Action
 put obj state
+ | obj==keys && carrying state obj = (e, "Object put down")
  | carrying state obj = (a, "Object put down")
  | otherwise = (state, "Object not in inventory")
  where
@@ -193,7 +201,7 @@ put obj state
    c = addObject (findObj obj (inventory state)) d
    b = updateRoom state (location_id state) c
    a = removeInv b obj
-
+   e = dropKeys a
 
 
 

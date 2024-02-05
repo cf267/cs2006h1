@@ -157,7 +157,7 @@ go dir state
                      Just x -> (state { location_id = x}, "OK")
                      Nothing -> (state, "Error: Cannot move in specified direction")
    where 
-      newState=(state {gameFinished = True})
+      newState=(state {gameDark = True})
 
 {- Remove an item from the current room, and put it in the player's inventory.
    This should only work if the object is in the current room. Use 'objectHere'

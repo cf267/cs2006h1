@@ -69,7 +69,7 @@ repl state = do outputStrLn (show state)
                      else if (won state' && brushed state' == False) then
                            do outputStrLn brushTeethMessage
                               return state'
-                     else if (gameFinished state') then
+                     else if (gameDark state') then
                            do outputStrLn darkMessage
                               return state'
                      else repl state'

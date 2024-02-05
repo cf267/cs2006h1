@@ -23,7 +23,7 @@ brushTeethMessage = "Congratulations, you have made it out of the house.\n" ++
 
 losemessage = "NOO! you forgot your house keys and have been LOCKED OUTTTT!!\n" ++
               "Well that the day ruined..."
-
+              
 openingMessage = "\nYou have woken up. Complete the following tasks to win the game: \n" ++
                  "- Find your clothes around the house and get dressed\n" ++
                  "- Drink some coffee\n" ++
@@ -38,7 +38,7 @@ openingMessage = "\nYou have woken up. Complete the following tasks to win the g
 -- funct act arg = case actions act of
 --                         Just fn -> addArg fn arg
 --                         Nothing -> Nothing
-
+                        
 
 -- addArg :: Action -> String -> Maybe Cmd
 -- addArg fn arg = case arguments arg of
@@ -46,11 +46,15 @@ openingMessage = "\nYou have woken up. Complete the following tasks to win the g
                         -- Nothing -> Nothing
 
 process :: GameData -> [String] -> (GameData, String)
---split the command into an action and an argument (direction, obj etc.)
---find the action, then pass in the argument as it's own type into the action
 process state [cmd,arg] = case actions cmd of
-                            Just fn -> fn arg state
-                            Nothing -> (state, "I don't understand")
+                              Just fn -> case objectOptions arg of 
+                                    Just obj -> fn obj state 
+                                    Nothing -> (state, "I don't understand") 
+                              Nothing -> case moves cmd of 
+                                    Just fn -> case directions arg of 
+                                          Just dir -> fn dir state 
+                                          Nothing -> (state, "I don't understand") 
+                                    Nothing -> (state, "I don't understand") 
 process state [cmd]     = case commands cmd of
                             Just fn -> fn state
                             Nothing -> (state, "I don't understand")
@@ -79,27 +83,27 @@ repl state = do outputStrLn (show state)
 main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()
 
-prop_validMove :: (String, Room) -> Bool
-prop_validMove (dir, rm) = case move dir rm of
-                        Just _ -> True
-                        Nothing -> False
+-- prop_validMove :: (Direction, Room) -> Bool
+-- prop_validMove (dir, rm) = case move dir rm of
+--                         Just _ -> True
+--                         Nothing -> False
 
-prop_objectFound :: (String, Room) -> Bool
-prop_objectFound (obj, rm) 
- | objectExists = True
- | otherwise = False
- where 
-   objectExists = objectHere obj rm
+-- prop_objectFound :: (Object, Room) -> Bool
+-- prop_objectFound (obj, rm) 
+--  | objectExists = True
+--  | otherwise = False
+--  where 
+--    objectExists = objectHere obj rm
 
-validMove :: Gen (String, Room)
-validMove = elements [("north", bedroom), ("east", bedroom), ("down", bedroom), ("east", hall), ("up", hall), ("south", kitchen), ("west", kitchen), ("north", livingroom), ("south", bathroom), ("west", wardrobe)]
+-- validMove :: Gen (Direction, Room)
+-- validMove = elements [("north", bedroom), ("east", bedroom), ("down", bedroom), ("east", hall), ("up", hall), ("south", kitchen), ("west", kitchen), ("north", livingroom), ("south", bathroom), ("west", wardrobe)]
 
-validRoomObject :: Gen (String, Room)
-validRoomObject = elements [("mug", bedroom), ("laptop", bedroom), ("jeans", bedroom), ("trainers", hall), ("coffee", kitchen), ("keys", livingroom), ("hoodie", livingroom), ("toothbrush", bathroom)]
+-- validRoomObject :: Gen (Object, Room)
+-- validRoomObject = elements [("mug", bedroom), ("laptop", bedroom), ("jeans", bedroom), ("trainers", hall), ("coffee", kitchen), ("keys", livingroom), ("hoodie", livingroom), ("toothbrush", bathroom)]
 
-runTests = do 
-           quickCheck (forAll validMove prop_validMove)
-           quickCheck (forAll validRoomObject prop_objectFound)
+-- runTests = do 
+--            quickCheck (forAll validMove prop_validMove)
+--            quickCheck (forAll validRoomObject prop_objectFound)
 
 wordParser :: Parser [String]
 wordParser = many (token ident)

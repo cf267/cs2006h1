@@ -1,307 +1,114 @@
-module Actions where
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
+module Main where
 
 import World
-import Data.List
+import Actions
+import Parsing
+
+import System.Console.Haskeline
+import Control.Monad
+import System.IO
+import System.Exit
+
+import Test.QuickCheck
+import Test.QuickCheck.All
+
+winmessage = "Congratulations, you have made it out of the house.\n" ++
+             "Now go to your lectures..."
+
+brushTeethMessage = "Congratulations, you have made it out of the house.\n" ++
+                   "But you forgot to brush your teeth! Now you have to go to lectures with stinky breath...."
+
+losemessage = "NOO! you forgot your house keys and have been LOCKED OUTTTT!!\n" ++
+              "Well that the day ruined..."
+              
+openingMessage = "\nYou have woken up. Complete the following tasks to win the game: \n" ++
+                 "- Find your clothes around the house and get dressed\n" ++
+                 "- Drink some coffee\n" ++
+                 "- Brush your teeth\n" ++
+                 "- Collect your keys and laptop\n" ++
+                 "- Leave the house for your lectures\n"
+
+{- Given a game state, and user input (as a list of words) return a 
+   new game state and a message for the user. -}
+
+-- funct :: String -> String -> Maybe Cmd
+-- funct act arg = case actions act of
+--                         Just fn -> addArg fn arg
+--                         Nothing -> Nothing
+                        
+
+-- addArg :: Action -> String -> Maybe Cmd
+-- addArg fn arg = case arguments arg of
+--                         Just gn -> (fn, gn)
+                        -- Nothing -> Nothing
+
+process :: GameData -> [String] -> (GameData, String)
+process state [cmd,arg] = case actions cmd of
+                              Just fn -> case objectOptions arg of 
+                                    Just obj -> fn obj state 
+                                    Nothing -> (state, "I don't understand") 
+                              Nothing -> case moves cmd of 
+                                    Just fn -> case directions arg of 
+                                          Just dir -> fn dir state 
+                                          Nothing -> (state, "I don't understand") 
+                                    Nothing -> (state, "I don't understand") 
+process state [cmd]     = case commands cmd of
+                            Just fn -> fn state
+                            Nothing -> (state, "I don't understand")
+process state _ = (state, "I don't understand")
+
+repl :: GameData -> InputT IO GameData
+repl state | finished state = return state
+repl state = do outputStrLn (show state)
+                maybeCmd <- getInputLine "What now? "
+                case maybeCmd of
+                  Nothing -> repl state
+                  Just line -> do
+                     let (state', msg) = process state (tokenizeWords line)
+                     outputStrLn msg
+                     if (won state') then 
+                           do outputStrLn winmessage
+                              return state'
+                     else if (lockedOut state') then 
+                           do outputStrLn losemessage
+                              return state'
+                     else if (won state' && brushed state' == False) then
+                           do outputStrLn brushTeethMessage
+                              return state'
+                     else repl state'
+
+main :: IO ()
+main = runInputT defaultSettings (repl initState) >> return ()
+
+-- prop_validMove :: (Direction, Room) -> Bool
+-- prop_validMove (dir, rm) = case move dir rm of
+--                         Just _ -> True
+--                         Nothing -> False
+
+-- prop_objectFound :: (Object, Room) -> Bool
+-- prop_objectFound (obj, rm) 
+--  | objectExists = True
+--  | otherwise = False
+--  where 
+--    objectExists = objectHere obj rm
+
+-- validMove :: Gen (Direction, Room)
+-- validMove = elements [("north", bedroom), ("east", bedroom), ("down", bedroom), ("east", hall), ("up", hall), ("south", kitchen), ("west", kitchen), ("north", livingroom), ("south", bathroom), ("west", wardrobe)]
+
+-- validRoomObject :: Gen (Object, Room)
+-- validRoomObject = elements [("mug", bedroom), ("laptop", bedroom), ("jeans", bedroom), ("trainers", hall), ("coffee", kitchen), ("keys", livingroom), ("hoodie", livingroom), ("toothbrush", bathroom)]
+
+-- runTests = do 
+--            quickCheck (forAll validMove prop_validMove)
+--            quickCheck (forAll validRoomObject prop_objectFound)
+
+wordParser :: Parser [String]
+wordParser = many (token ident)
 
-actions :: String -> Maybe Action
-actions "go"      = Just go
-actions "get"     = Just get
-actions "drop"    = Just put
-actions "pour"    = Just pour
-actions "examine" = Just examine
-actions "drink"   = Just drink
-actions "open"    = Just open
-actions "light"   = Just lights
-actions "brush"   = Just brush
-actions "dress"   = Just dress
-actions _         = Nothing
-
-commands :: String -> Maybe Command
-commands "quit"      = Just quit
-commands "inventory" = Just inv
-commands _           = Nothing 
-
-arguments :: String -> Maybe Args
-arguments _ = Nothing
-
-{- Given a direction and a room to move from, return the room id in
-   that direction, if it exists.
-
-e.g. try these at the ghci prompt
-
-*Main> move "north" bedroom
-Just "kitchen"
-
-*Main> move "north" kitchen
-Nothing
--}
-
-move :: String -> Room -> Maybe String 
-move dir rm | dir == "north" && room_desc rm == "You are in the bedroom. " = Just "bathroom" 
-            | dir == "east" && room_desc rm == "You are in the bedroom. " = Just "wardrobe" 
-            | dir == "down" && room_desc rm == "You are in the bedroom. " = Just "hall" 
-            | dir == "east" && room_desc rm == "You are in the hallway. The front door is closed. " = Just "kitchen"
-            | dir == "up" && room_desc rm == "You are in the hallway. The front door is closed. " = Just "bedroom"
-            | dir == "out" && room_desc rm == "You are in the hallway. The front door is open. " = Just "street"
-            | dir == "south" && room_desc rm == "You are in the kitchen. " = Just "living room"
-            | dir == "west" && room_desc rm == "You are in the kitchen. " = Just "hall"
-            | dir == "north" && room_desc rm == "You are in the living room. " = Just "kitchen"
-            | dir == "south" && room_desc rm == "You are in the bathroom. " = Just "bedroom"
-            | dir == "west" && room_desc rm == "You are in the wardrobe. " = Just "bedroom"
-            -- | dir == "in" && room_desc rm == "You have made it out of the house. " = Just "hall"
-            | otherwise = Nothing
-
-{- Return True if the object appears in the room. -}
-
-objectHere :: String -> Room -> Bool
-objectHere o rm = o `elem` (map obj_name (objects rm))
-
-{- Given an object id and a room description, return a new room description
-   without that object -}
-
-removeObject :: String -> Room -> Room
-removeObject o rm = rm {objects = filter (\x -> obj_name x /= o) (objects rm) }
-
-{- Given an object and a room description, return a new room description
-   with that object added -}
-
-addObject :: Object -> Room -> Room
-addObject o rm = rm {objects = objects rm ++ [o]}
-
-{- Given an object id and a list of objects, return the object data. Note
-   that you can assume the object is in the list (i.e. that you have
-   checked with 'objectHere') -}
-
-
-findObj :: String -> [Object] -> Object
-findObj o ds = case find (\object -> obj_name object == o) ds of 
-               Just x -> x
-            
-{- Use 'findObj' to find an object in a room description -}
-
-objectData :: String -> Room -> Object
-objectData o rm = findObj o (objects rm)
-
-
-{- Given a game state and a room id, replace the old room information with
-   new data. If the room id does not already exist, add it. -}
-
-updateRoom :: GameData -> String -> Room -> GameData
-updateRoom gd rmid rmdata | length (world gd) == 0 = gd {world = [(rmid, rmdata)]}
-                          | otherwise = gd { world = (rmid, rmdata) : ( filter (\(x,y) -> x /= rmid) (world gd)) }
-
-{- Given a game state and an object id, find the object in the current
-   room and add it to the player's inventory -}
-
-addInv :: GameData -> String -> GameData
-addInv gd obj = gd {inventory = inventory gd ++ [objectData obj (getCurrentRoom gd)]}
-
-
-{- Given a game state and an object id, remove the object from the
-   inventory. Hint: use filter to check if something should still be in
-   the inventory. -}
-
-removeInv :: GameData -> String -> GameData
-removeInv gd obj = gd { inventory = filter (\x -> obj_name x /= obj) (inventory gd) } 
-
-{- Does the inventory in the game state contain the given object? -}
-
-carrying :: GameData -> String -> Bool
-carrying gd obj = elem obj (map obj_name (inventory gd)) 
-
-collectKeys ::GameData -> GameData
-collectKeys gd = gd {gotKeys = True}
-
-dropKeys ::GameData -> GameData
-dropKeys gd = gd {gotKeys = False}
-
-{-
-Define the "go" action. Given a direction and a game state, update the game
-state with the new location. If there is no exit that way, report an error.
-Remember Actions return a 2-tuple of GameData and String. The String is
-a message reported to the player.
-
-e.g.
-*Main> go "north" initState
-(kitchen,"OK")
-
--}
-
---String -> GameData -> (GameData, String)
-go :: Action
-go dir state = if lightson state then 
-                     case (move dir (getCurrentRoom state)) of
-                        Just x -> (state { location_id = x}, "OK")
-                        Nothing -> (state, "Error: Cannot move in specified direction")
-               else
-                     (state { over = True},"OK")
-
-{- Remove an item from the current room, and put it in the player's inventory.
-   This should only work if the object is in the current room. Use 'objectHere'
-   and 'removeObject' to remove the object, and 'updateRoom' to replace the
-   room in the game state with the new room which doesn't contain the object.
-
-   Hints: you will need to take care to update things in the right order here!
-    * create a new state with the updated inventory (use 'objectData')
-    * create a new room without the object (use 'removeObject')
-    * update the game state with this new room in the current location
-      (use 'location_id' to find where the player is)
--}
---gd rmid rmdata
-get :: Action
-get obj state 
-   | objectExists && obj == "keys" =
-      (collectKeys(updateRoom (addInv state obj) (location_id state) (removeObject obj (getCurrentRoom state))), "OK")
-   | objectExists =
-      (updateRoom (addInv state obj) (location_id state) (removeObject obj (getCurrentRoom state)), "OK")
-   | otherwise =
-      (state, "Error: No object to collect")
-   where
-      objectExists = objectHere obj (getCurrentRoom state)
-
-
-
-{- Remove an item from the player's inventory, and put it in the current room.
-  Similar to 'get' but in reverse - find the object in the inventory, create
-  a new room with the object in, update the game world with the new room.
--}
-
-
-put :: Action
-put obj state
- | carrying state obj && obj == "keys" = (e, "Object put down")
- | carrying state obj = (a, "Object put down")
- | otherwise = (state, "Object not in inventory")
- where
-   d = getCurrentRoom state
-   c = addObject (findObj obj (inventory state)) d
-   b = updateRoom state (location_id state) c
-   a = removeInv b obj
-   e = dropKeys (a)
-
-
-
-
-{- Don't update the state, just return a message giving the full description
-  of the object. As long as it's either in the room or the player's
-  inventory! -}
-
-
-examine :: Action
-examine obj state
- | carrying state obj = (state, a)
- | objectHere obj (getCurrentRoom state) = (state, b)
- | otherwise = (state, "Item not in inventory or room")
- where
-   a = obj_desc (findObj obj (inventory state))
-   b = obj_desc (objectData obj (getCurrentRoom state))
-
-
-
-
-{- Pour the coffee. Obviously, this should only work if the player is carrying
-  both the pot and the mug. This should update the status of the "mug"
-  object in the player's inventory to be a new object, a "full mug".
--}
-
-
-pour :: Action
-pour obj state
- | carrying state "coffee" && carrying state "mug" = (newState, "Coffee poured into mug")
- | carrying state "coffee" = (state, "No mug in inventory")
- | carrying state "mug" = (state, "No coffee pot in inventory")
- | otherwise = (state, "No coffee pot or mug in inventory")
- where
-   tempState = removeInv state "mug" 
-   newState = tempState  { inventory = inventory tempState ++ [fullmug] }
-
-
-
-
-
-{- Drink the coffee. This should only work if the player has a full coffee
-  mug! Doing this is required to be allowed to open the door. Once it is
-  done, also update the 'caffeinated' flag in the game state.
-
-
-  Also, put the empty coffee mug back in the inventory!
--}
-
-
-drink :: Action
-drink obj state
- | carrying state "mug" = 
-      if obj_desc(findObj "mug" (inventory state)) == "A coffee mug containing freshly brewed coffee" then (newState, "Coffee has been drunk") else (state, "Mug not filled with coffee")
- | otherwise = (state, "No mug in inventory")
- where
-   tempState = removeInv state "mug"
-   newState = tempState { caffeinated = True, inventory = inventory tempState ++ [mug] }
-
-
-
-{-
-   Get the player dressed. This should only work if player has collected items
-   of clothes from around the house. Must be done within wardrobe. Once it is done, 
-   also update 'dressed' flag in the game state.
--}
-
-dress :: Action
-dress obj state 
-   | correctRoom && dressed = (newState, "You have dressed")
-   | correctRoom = (state, "Clothes are missing! You need to collect your hoodie, jeans, and shoes from around the house")
-   | dressed = (state, "You need to be in the wardrobe to get dressed")
-   | otherwise = (state, "You need to be in the wardobe to get dressed (make sure you have all your clothes!)")
-   where
-      newState = removeInv (removeInv(removeInv  (state {dressed = True}) "trainers")  "jeans" )  "hoodie" 
-      dressed = carrying state "trainers" && carrying state "jeans" && carrying state "hoodie" 
-      correctRoom = getCurrentRoom state == wardrobe
-
-
-
-{- Open the door. Only allowed if the player has had coffee!
-  This should change the description of the hall to say that the door is open,
-  and add an exit out to the street.
-
-
-  Use 'updateRoom' once you have made a new description. You can use
-  'openedhall' and 'openedexits' from World.hs for this. 
--}
-
-
-open :: Action
-open obj state
- | caffeinated state && dressed state = (newState, "Door opened")
- | caffeinated state = (state, "You need to be dressed to open the door")
- | dressed state = (state, "You need coffee to open the door")
- | otherwise = (state, "You need clothes and coffee to open the door")
- where
-   newState = updateRoom state "hall" b
-   b = Room openedhall openedexits []
-
-{- Allows the user to turn the lights on and off, and change what they can see -}
-
-lights :: Action 
-lights act state 
-   | act == "on" =  (state {lightson = True}, "Lights turned on")
-   | act == "off" = (state {lightson = False}, "Lights turned off")
-   | otherwise = (state, "I dont understand")
-
-{-Changes the state of brushed to true if the player is carrying the toothbrush-}
-
-brush :: Action 
-brush something state 
-   | carrying state "toothbrush" = (state {brushed = True}, "Teeth brushed")
-   | otherwise = (state, "No toothbrush in inventory")
-
-
-{- Don't update the game state, just list what the player is carrying -}
-
-inv :: Command
-inv state = (state, showInv (inventory state))
-   where showInv [] = "You aren't carrying anything"
-         showInv xs = "You are carrying:\n" ++ showInv' xs
-         showInv' [x] = obj_longname x
-         showInv' (x:xs) = obj_longname x ++ "\n" ++ showInv' xs
-
-quit :: Command
-quit state = (state { finished = True }, "Bye bye")
+tokenizeWords :: String -> [String]
+tokenizeWords input = case parse wordParser input of
+  [(words, _)] -> words
+  _            -> []

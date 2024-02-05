@@ -36,17 +36,6 @@ darkMessage = "You hit your head, why would you try and wonder round in the dark
 {- Given a game state, and user input (as a list of words) return a 
    new game state and a message for the user. -}
 
--- funct :: String -> String -> Maybe Cmd
--- funct act arg = case actions act of
---                         Just fn -> addArg fn arg
---                         Nothing -> Nothing
-                        
-
--- addArg :: Action -> String -> Maybe Cmd
--- addArg fn arg = case arguments arg of
---                         Just gn -> (fn, gn)
-                        -- Nothing -> Nothing
-
 process :: GameData -> [String] -> (GameData, String)
 process state [cmd,arg] = case actions cmd of
                               Just fn -> case objectOptions arg of 
@@ -88,27 +77,27 @@ repl state = do outputStrLn (show state)
 main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()
 
--- prop_validMove :: (Direction, Room) -> Bool
--- prop_validMove (dir, rm) = case move dir rm of
---                         Just _ -> True
---                         Nothing -> False
+prop_validMove :: (Direction, Room) -> Bool
+prop_validMove (dir, rm) = case move dir rm of
+                        Just _ -> True
+                        Nothing -> False
 
--- prop_objectFound :: (Object, Room) -> Bool
--- prop_objectFound (obj, rm) 
---  | objectExists = True
---  | otherwise = False
---  where 
---    objectExists = objectHere obj rm
+prop_objectFound :: (Object, Room) -> Bool
+prop_objectFound (obj, rm) 
+ | objectExists = True
+ | otherwise = False
+ where 
+   objectExists = objectHere obj rm
 
--- validMove :: Gen (Direction, Room)
--- validMove = elements [("north", bedroom), ("east", bedroom), ("down", bedroom), ("east", hall), ("up", hall), ("south", kitchen), ("west", kitchen), ("north", livingroom), ("south", bathroom), ("west", wardrobe)]
+validMove :: Gen (Direction, Room)
+validMove = elements [(North, bedroom), (East, bedroom), (Down, bedroom), (East, hall), (Up, hall), (South, kitchen), (West, kitchen), (North, livingroom), (South, bathroom), (West, wardrobe)]
 
--- validRoomObject :: Gen (Object, Room)
--- validRoomObject = elements [("mug", bedroom), ("laptop", bedroom), ("jeans", bedroom), ("trainers", hall), ("coffee", kitchen), ("keys", livingroom), ("hoodie", livingroom), ("toothbrush", bathroom)]
+validRoomObject :: Gen (Object, Room)
+validRoomObject = elements [(mug, bedroom), (laptop, bedroom), (jeans, bedroom), (trainers, hall), (coffeepot, kitchen), (keys, livingroom), (hoodie, livingroom), (toothbrush, bathroom)]
 
--- runTests = do 
---            quickCheck (forAll validMove prop_validMove)
---            quickCheck (forAll validRoomObject prop_objectFound)
+runTests = do 
+           quickCheck (forAll validMove prop_validMove)
+           quickCheck (forAll validRoomObject prop_objectFound)
 
 wordParser :: Parser [String]
 wordParser = many (token ident)

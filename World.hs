@@ -19,14 +19,9 @@ data Room = Room { room_desc :: String,
                    objects :: [Object] }
    deriving Eq
 
-data Direction = North | South | East | West | Out | Up | Down -- in 
-   deriving (Read, Eq, Enum)
+data Direction = North | South | East | West | Out | Up | Down
+   deriving (Eq, Enum, Show)
 
-data Arg = Object | Direction | String
-   deriving (Read, Eq, Enum)
-
-data Cmd = Go Direction | Get Object | Put Object | Pour Object | Drink Object
-   deriving Eq
 
 data GameData = GameData { location_id :: String, -- where player is
                            world :: [(String, Room)],

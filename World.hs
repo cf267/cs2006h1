@@ -1,20 +1,20 @@
 module World where
 import Data.List
 
-data Object = Obj { obj_name :: String,
-                    obj_longname :: String,
-                    obj_desc :: String }
+data Object = Obj { objName :: String,
+                    objLongname :: String,
+                    objDesc :: String }
    deriving Eq
 
 instance Show Object where
-   show obj = obj_longname obj
+   show obj = objLongname obj
 
-data Exit = Exit { exit_dir :: String,
-                   exit_desc :: String,
+data Exit = Exit { exitDir :: String,
+                   exitDesc :: String,
                    room :: String }
    deriving Eq
 
-data Room = Room { room_desc :: String,
+data Room = Room { roomDesc :: String,
                    exits :: [Exit],
                    objects :: [Object] }
    deriving Eq
@@ -23,28 +23,25 @@ data Direction = North | South | East | West | Out | Up | Down
    deriving (Eq, Enum, Show)
 
 
-data GameData = GameData { location_id :: String, -- where player is
+data GameData = GameData { locationId :: String, -- where player is
                            world :: [(String, Room)],
                            inventory :: [Object], -- objects player has
                            poured :: Bool, -- coffee is poured
                            caffeinated :: Bool, -- coffee is drunk
-                           lightson :: Bool, -- lights are switched on
+                           lightsOn :: Bool, -- lights are switched on
                            dressed :: Bool, -- player is dressed
                            finished :: Bool, -- set to True at the end
                            gotKeys :: Bool, -- set to True when keys collected
                            brushed :: Bool, -- teeth have been brushed
-                           gameDark :: Bool --If move is attempted while lights are off
+                           gameDark :: Bool -- lights are turned on
                          }
 
 won :: GameData -> Bool
-won gd = location_id gd == "street" && gotKeys gd
-
-lockedOut :: GameData -> Bool
-lockedOut gd = location_id gd == "street" && gotKeys gd == False
+won gd = locationId gd == "street" && gotKeys gd
 
 
 instance Show Room where
-    show (Room desc exits objs) = desc ++ "\n" ++ concatMap exit_desc exits ++
+    show (Room desc exits objs) = desc ++ "\n" ++ concatMap exitDesc exits ++
                                   showInv objs
        where showInv [] = ""
              showInv xs = "\n\nYou can see: " ++ showInv' xs
@@ -52,19 +49,19 @@ instance Show Room where
              showInv' (x:xs) = show x ++ ", " ++ showInv' xs
                                   
 hideInv :: Room -> String 
-hideInv (Room desc exits objs) = desc ++ "\n" ++ concatMap exit_desc exits ++ "\n\nLights are off, you cannot see anything."           
+hideInv (Room desc exits objs) = desc ++ "\n" ++ concatMap exitDesc exits ++ "\n\nLights are off, you cannot see anything."           
 
 instance Show GameData where
-   show gd = if lightson gd then show (getCurrentRoom gd) else hideInv (getCurrentRoom gd)
+   show gd = if lightsOn gd then show (getCurrentRoom gd) else hideInv (getCurrentRoom gd)
 
 -- Things which do something to an object and update the game state
-type Action  = Object -> GameData -> (GameData, String) 
+type Action  = Object -> GameData -> IO (GameData, String) 
 
 -- Takes a direction
-type Move = Direction -> GameData -> (GameData, String)
+type Move = Direction -> GameData -> IO (GameData, String)
 
 -- Things which just update the game state
-type Command = GameData -> (GameData, String)
+type Command = GameData -> IO (GameData, String)
 
 mug, fullmug, coffeepot, keys, laptop, toothbrush, jeans, trainers, hoodie :: Object
 mug       = Obj "mug" "a coffee mug" "A coffee mug"
@@ -132,9 +129,9 @@ initState = GameData "bedroom" gameworld [] False False False False False False 
 {- Return the room the player is currently in. -}
 
 getRoomData :: GameData -> Room
-getRoomData gd = maybe undefined id (lookup (location_id gd) (world gd))
+getRoomData gd = maybe undefined id (lookup (locationId gd) (world gd))
 
 getCurrentRoom :: GameData -> Room
-getCurrentRoom gd = case find (\(x,_) -> x == (location_id gd)) (world gd) of
+getCurrentRoom gd = case find (\(x,_) -> x == (locationId gd)) (world gd) of
                            Just (_,room) -> room
                            Nothing -> bedroom

@@ -2,6 +2,7 @@ module Actions where
 
 import World
 import Data.List
+import SaveLoad
 
 actions :: String -> Maybe Action
 actions "get"     = Just get
@@ -18,10 +19,12 @@ moves _         = Nothing
 commands :: String -> Maybe Command
 commands "quit"      = Just quit
 commands "inventory" = Just inv
-commands "open"    = Just open
-commands "lights"   = Just lights
-commands "brush"   = Just brush
-commands "dress"   = Just dress
+commands "open"      = Just open
+commands "lights"    = Just lights
+commands "brush"     = Just brush
+commands "dress"     = Just dress
+commands "save"      = Just save
+commands "load"      = Just load
 commands _           = Nothing 
 
 
@@ -60,17 +63,17 @@ Nothing
 -}
 
 move :: Direction -> Room -> Maybe String 
-move dir rm | dir == North && room_desc rm == "You are in the bedroom. " = Just "bathroom" 
-            | dir == East && room_desc rm == "You are in the bedroom. " = Just "wardrobe" 
-            | dir == Down && room_desc rm == "You are in the bedroom. " = Just "hall" 
-            | dir == East && room_desc rm == "You are in the hallway. The front door is closed. " = Just "kitchen"
-            | dir == Up && room_desc rm == "You are in the hallway. The front door is closed. " = Just "bedroom"
-            | dir == Out && room_desc rm == "You are in the hallway. The front door is open. " = Just "street"
-            | dir == South && room_desc rm == "You are in the kitchen. " = Just "living room"
-            | dir == West && room_desc rm == "You are in the kitchen. " = Just "hall"
-            | dir == North && room_desc rm == "You are in the living room. " = Just "kitchen"
-            | dir == South && room_desc rm == "You are in the bathroom. " = Just "bedroom"
-            | dir == West && room_desc rm == "You are in the wardrobe. " = Just "bedroom"
+move dir rm | dir == North && roomDesc rm == "You are in the bedroom. " = Just "bathroom" 
+            | dir == East && roomDesc rm == "You are in the bedroom. " = Just "wardrobe" 
+            | dir == Down && roomDesc rm == "You are in the bedroom. " = Just "hall" 
+            | dir == East && roomDesc rm == "You are in the hallway. The front door is closed. " = Just "kitchen"
+            | dir == Up && roomDesc rm == "You are in the hallway. The front door is closed. " = Just "bedroom"
+            | dir == Out && roomDesc rm == "You are in the hallway. The front door is open. " = Just "street"
+            | dir == South && roomDesc rm == "You are in the kitchen. " = Just "living room"
+            | dir == West && roomDesc rm == "You are in the kitchen. " = Just "hall"
+            | dir == North && roomDesc rm == "You are in the living room. " = Just "kitchen"
+            | dir == South && roomDesc rm == "You are in the bathroom. " = Just "bedroom"
+            | dir == West && roomDesc rm == "You are in the wardrobe. " = Just "bedroom"
             | otherwise = Nothing
 
 {- Return True if the object appears in the room. -}
@@ -152,10 +155,10 @@ e.g.
 
 go :: Move
 go dir state 
-   | (lightson state) == False = (newState,"OK")
+   | (lightsOn state) == False = makeIO (newState,"OK")
    | otherwise = case (move dir (getCurrentRoom state)) of
-                     Just x -> (state { location_id = x}, "OK")
-                     Nothing -> (state, "Error: Cannot move in specified direction")
+                     Just x -> makeIO (state { locationId = x}, "OK")
+                     Nothing -> makeIO (state, "Error: Cannot move in specified direction")
    where 
       newState=(state {gameDark = True})
 
@@ -174,11 +177,11 @@ go dir state
 get :: Action
 get obj state 
    | objectExists && obj == keys =
-      (collectKeys(updateRoom (addInv state obj) (location_id state) (removeObject obj (getCurrentRoom state))), "OK")
+      makeIO (collectKeys(updateRoom (addInv state obj) (locationId state) (removeObject obj (getCurrentRoom state))), "OK")
    | objectExists =
-      (updateRoom (addInv state obj) (location_id state) (removeObject obj (getCurrentRoom state)), "OK")
+      makeIO (updateRoom (addInv state obj) (locationId state) (removeObject obj (getCurrentRoom state)), "OK")
    | otherwise =
-      (state, "Error: No object to collect")
+      makeIO (state, "Error: No object to collect")
    where
       objectExists = objectHere obj (getCurrentRoom state)
 
@@ -192,13 +195,13 @@ get obj state
 
 put :: Action
 put obj state
- | obj==keys && carrying state obj = (e, "Object put down")
- | carrying state obj = (a, "Object put down")
- | otherwise = (state, "Object not in inventory")
+ | obj==keys && carrying state obj = makeIO (e, "Object put down")
+ | carrying state obj = makeIO (a, "Object put down")
+ | otherwise = makeIO (state, "Object not in inventory")
  where
    d = getCurrentRoom state
    c = addObject (findObj obj (inventory state)) d
-   b = updateRoom state (location_id state) c
+   b = updateRoom state (locationId state) c
    a = removeInv b obj
    e = dropKeys a
 
@@ -209,12 +212,12 @@ put obj state
 
 examine :: Action
 examine obj state
- | carrying state obj = (state, a)
- | objectHere obj (getCurrentRoom state) = (state, b)
- | otherwise = (state, "Item not in inventory or room")
+ | carrying state obj = makeIO (state, a)
+ | objectHere obj (getCurrentRoom state) = makeIO (state, b)
+ | otherwise = makeIO (state, "Item not in inventory or room")
  where
-   a = obj_desc (findObj obj (inventory state))
-   b = obj_desc (objectData obj (getCurrentRoom state))
+   a = objDesc (findObj obj (inventory state))
+   b = objDesc (objectData obj (getCurrentRoom state))
 
 
 {- Pour the coffee. Obviously, this should only work if the player is carrying
@@ -225,11 +228,11 @@ examine obj state
 
 pour :: Action
 pour obj state
- | obj /= coffeepot = (state, "I don't understand")
- | carrying state coffeepot && carrying state mug = (newState, "Coffee poured into mug")
- | carrying state coffeepot = (state, "No mug in inventory")
- | carrying state mug = (state, "No coffee pot in inventory")
- | otherwise = (state, "No coffee pot or mug in inventory")
+ | obj /= coffeepot = makeIO (state, "I don't understand")
+ | carrying state coffeepot && carrying state mug = makeIO (newState, "Coffee poured into mug")
+ | carrying state coffeepot = makeIO (state, "No mug in inventory")
+ | carrying state mug = makeIO (state, "No coffee pot in inventory")
+ | otherwise = makeIO (state, "No coffee pot or mug in inventory")
  where
    tempState = removeInv state mug
    newState = tempState  { inventory = inventory tempState ++ [fullmug] }
@@ -246,10 +249,10 @@ pour obj state
 
 drink :: Action
 drink obj state
- | obj /= mug && obj /= coffeepot = (state, "I don't understand") 
- | carrying state fullmug = (newState, "Coffee has been drunk") 
- | carrying state mug = (state, "Mug not filled with coffee")
- | otherwise = (state, "No mug in inventory")
+ | obj /= mug && obj /= coffeepot = makeIO (state, "I don't understand") 
+ | carrying state fullmug = makeIO (newState, "Coffee has been drunk") 
+ | carrying state mug = makeIO (state, "Mug not filled with coffee")
+ | otherwise = makeIO (state, "No mug in inventory")
  where
    tempState = removeInv state mug
    newState = tempState { caffeinated = True, inventory = inventory tempState ++ [mug] }
@@ -263,10 +266,10 @@ drink obj state
 
 dress :: Command
 dress state 
-   | correctRoom && dressed = (newState, "You have dressed")
-   | correctRoom = (state, "Clothes are missing! You need to collect your hoodie, jeans, and shoes from around the house")
-   | dressed = (state, "You need to be in the wardrobe to get dressed")
-   | otherwise = (state, "You need to be in the wardobe to get dressed (make sure you have all your clothes!)")
+   | correctRoom && dressed = makeIO (newState, "You have dressed")
+   | correctRoom = makeIO (state, "Clothes are missing! You need to collect your hoodie, jeans, and shoes from around the house")
+   | dressed = makeIO (state, "You need to be in the wardrobe to get dressed")
+   | otherwise = makeIO (state, "You need to be in the wardobe to get dressed (make sure you have all your clothes!)")
    where
       newState = removeInv (removeInv(removeInv  (state {dressed = True}) trainers)  jeans )  hoodie
       dressed = carrying state trainers && carrying state jeans && carrying state hoodie
@@ -286,10 +289,10 @@ dress state
 
 open :: Command
 open state
- | caffeinated state && dressed state = (newState, "Door opened")
- | caffeinated state = (state, "You need to be dressed to open the door")
- | dressed state = (state, "You need coffee to open the door")
- | otherwise = (state, "You need clothes and coffee to open the door")
+ | caffeinated state && dressed state = makeIO (newState, "Door opened")
+ | caffeinated state = makeIO (state, "You need to be dressed to open the door")
+ | dressed state = makeIO (state, "You need coffee to open the door")
+ | otherwise = makeIO (state, "You need clothes and coffee to open the door")
  where
    newState = updateRoom state "hall" b
    b = Room openedhall openedexits []
@@ -298,25 +301,36 @@ open state
 
 lights :: Command 
 lights state 
-   | lightson state = (state {lightson = False}, "Lights turned off")
-   | otherwise = (state {lightson = True}, "Lights turned on")
+   | lightsOn state = makeIO (state {lightsOn = False}, "Lights turned off")
+   | otherwise = makeIO (state {lightsOn = True}, "Lights turned on")
 
 {-Changes the state of brushed to true if the player is carrying the toothbrush-}
 
 brush :: Command 
 brush state 
-   | carrying state toothbrush = (state {brushed = True}, "Teeth brushed")
-   | otherwise = (state, "No toothbrush in inventory")
+   | carrying state toothbrush = makeIO (state {brushed = True}, "Teeth brushed")
+   | otherwise = makeIO (state, "No toothbrush in inventory")
 
 
 {- Don't update the game state, just list what the player is carrying -}
 
 inv :: Command
-inv state = (state, showInv (inventory state))
+inv state = makeIO (state, showInv (inventory state))
    where showInv [] = "You aren't carrying anything"
          showInv xs = "You are carrying:\n" ++ showInv' xs
-         showInv' [x] = obj_longname x
-         showInv' (x:xs) = obj_longname x ++ "\n" ++ showInv' xs
+         showInv' [x] = objLongname x
+         showInv' (x:xs) = objLongname x ++ "\n" ++ showInv' xs
 
 quit :: Command
-quit state = (state { finished = True }, "Bye bye")
+quit state = makeIO (state { finished = True }, "Bye bye")
+
+save :: Command
+save state = do
+   successmessage <- saveToFile state
+   return (state, successmessage)
+
+load :: Command
+load state = loadFile state
+
+makeIO :: (GameData, String) -> IO (GameData, String)
+makeIO (gd, s) = return (gd, s)

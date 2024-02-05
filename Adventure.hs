@@ -9,6 +9,7 @@ import Parsing
 
 import System.Console.Haskeline
 import Control.Monad
+import Control.Monad.IO.Class (liftIO)
 import System.IO
 import System.Exit
 
@@ -31,48 +32,59 @@ openingMessage = "\nYou have woken up. Complete the following tasks to win the g
                  "- Collect your keys and laptop\n" ++
                  "- Leave the house for your lectures\n"
 
-darkMessage = "You hit your head, why would you try and wander around in the dark?"
+darkMessage = "You hit your head, why would you try and wonder round in the dark?"
 
 {- Given a game state, and user input (as a list of words) return a 
    new game state and a message for the user. -}
 
-process :: GameData -> [String] -> (GameData, String)
+process :: GameData -> [String] -> IO (GameData, String)
 process state [cmd,arg] = case actions cmd of
                               Just fn -> case objectOptions arg of 
                                     Just obj -> fn obj state 
-                                    Nothing -> (state, "I don't understand") 
+                                    Nothing -> makeIO (state, "I don't understand") 
                               Nothing -> case moves cmd of 
                                     Just fn -> case directions arg of 
                                           Just dir -> fn dir state 
-                                          Nothing -> (state, "I don't understand") 
-                                    Nothing -> (state, "I don't understand") 
+                                          Nothing -> makeIO (state, "I don't understand") 
+                                    Nothing -> makeIO (state, "I don't understand") 
 process state [cmd]     = case commands cmd of
                             Just fn -> fn state
-                            Nothing -> (state, "I don't understand")
-process state _ = (state, "I don't understand")
+                            Nothing -> makeIO (state, "I don't understand")
+process state _ = makeIO (state, "I don't understand")
 
 repl :: GameData -> InputT IO GameData
 repl state | finished state = return state
-repl state = do outputStrLn (show state)
+repl state = do 
+      outputStrLn (show state)
+      maybeCmd <- getInputLine "What now? "
+      -- hFlush stdout
+      -- cmd <- getLine
+      case maybeCmd of
+            Nothing -> repl state
+            Just line -> do
+                  (state', msg) <- liftIO (process state (tokenizeWords line))
+                  outputStrLn msg
+                  if (won state') then do 
+                        outputStrLn winmessage
+                        return state'
+                  else if (won state' && gotKeys state' == False) then do
+                        outputStrLn losemessage
+                        return state'
+                  else if (won state' && brushed state' == False) then do
+                        outputStrLn brushTeethMessage
+                        return state'
+                  else if (gameDark state') then do
+                        outputStrLn darkMessage
+                        return state'
+                  else repl state'
+
+{-do outputStrLn (show state)
                 maybeCmd <- getInputLine "What now? "
                 case maybeCmd of
                   Nothing -> repl state
                   Just line -> do
-                     let (state', msg) = process state (tokenizeWords line)
-                     outputStrLn msg
-                     if (won state') then 
-                           do outputStrLn winmessage
-                              return state'
-                     else if (lockedOut state') then 
-                           do outputStrLn losemessage
-                              return state'
-                     else if (won state' && brushed state' == False) then
-                           do outputStrLn brushTeethMessage
-                              return state'
-                     else if (gameDark state') then
-                           do outputStrLn darkMessage
-                              return state'
-                     else repl state'
+                     (state', msg) <- process state (tokenizeWords line)
+                     outputStrLn msg-}
 
 main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()

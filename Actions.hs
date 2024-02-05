@@ -27,7 +27,6 @@ commands _           = Nothing
 
 objectOptions :: String -> Maybe Object
 objectOptions "mug"      = Just mug
---objects "mug2"     = Just fullmug
 objectOptions "coffee"    = Just coffeepot
 objectOptions "keys"    = Just keys
 objectOptions "laptop" = Just laptop
@@ -164,7 +163,7 @@ go dir state = case (move dir (getCurrentRoom state)) of
     * update the game state with this new room in the current location
       (use 'location_id' to find where the player is)
 -}
---gd rmid rmdata
+
 get :: Action
 get obj state 
    | objectExists && obj == keys =
@@ -195,8 +194,6 @@ put obj state
    a = removeInv b obj
 
 
-
-
 {- Don't update the state, just return a message giving the full description
   of the object. As long as it's either in the room or the player's
   inventory! -}
@@ -210,8 +207,6 @@ examine obj state
  where
    a = obj_desc (findObj obj (inventory state))
    b = obj_desc (objectData obj (getCurrentRoom state))
-
-
 
 
 {- Pour the coffee. Obviously, this should only work if the player is carrying
@@ -232,9 +227,6 @@ pour obj state
    newState = tempState  { inventory = inventory tempState ++ [fullmug] }
   
 
-
-
-
 {- Drink the coffee. This should only work if the player has a full coffee
   mug! Doing this is required to be allowed to open the door. Once it is
   done, also update the 'caffeinated' flag in the game state.
@@ -253,7 +245,6 @@ drink obj state
  where
    tempState = removeInv state mug
    newState = tempState { caffeinated = True, inventory = inventory tempState ++ [mug] }
-
 
 
 {-

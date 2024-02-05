@@ -33,7 +33,7 @@ data GameData = GameData { location_id :: String, -- where player is
                            finished :: Bool, -- set to True at the end
                            gotKeys :: Bool, -- set to True when keys collected
                            brushed :: Bool, -- teeth have been brushed
-                           gameDark :: Bool
+                           gameDark :: Bool --If move is attempted while lights are off
                          }
 
 won :: GameData -> Bool

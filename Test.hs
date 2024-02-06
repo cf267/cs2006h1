@@ -56,36 +56,57 @@ prop_removeFromInventory gd obj
     newInv = removeInv gd obj
     originalLength = length (inventory gd)
 
-prop_testPour :: Object -> GameData -> Bool
-prop_testPour obj gd
+prop_ObjectRetrieved :: Object -> GameData -> Bool
+prop_ObjectRetrieved obj gd
+ | objectHere obj (getCurrentRoom gd) && obj == keys = gotKeys updatedGD && carrying updatedGD obj && objectHere obj (getCurrentRoom updatedGD) == False
+ | objectHere obj (getCurrentRoom gd) = carrying updatedGD obj && objectHere obj (getCurrentRoom updatedGD) == False
+ | otherwise = gd ==updatedGD
+ where updatedGD = fst(get obj gd)
+
+
+prop_ObjectDropped :: Object -> GameData -> Bool
+prop_ObjectDropped obj gd
+ | obj==keys && carrying gd obj = gotKeys updatedGD == False && objectHere obj (getCurrentRoom updatedGD) && carrying updatedGD obj == False
+ | carrying gd obj = objectHere obj (getCurrentRoom updatedGD) && carrying updatedGD obj == False
+ | otherwise = gd == updatedGD
+ where updatedGD = fst(put obj gd)
+
+prop_ObjectExamined :: Object -> GameData -> Bool
+prop_ObjectExamined obj gd
+ | carrying gd obj || objectHere obj (getCurrentRoom gd) = objDesc obj == objD
+ | otherwise = objD == "Item not in inventory or room"
+ where objD = snd(examine obj gd)
+
+prop_CoffeePoured :: Object -> GameData -> Bool
+prop_CoffeePoured obj gd
  | obj == coffeepot && carrying gd coffeepot && carrying gd mug = carrying updatedGD fullmug
  | otherwise = gd == updatedGD 
- where updatedGD = fst(pour coffeepot gd)
+ where updatedGD = fst(pour obj gd)
 
-prop_testDrink:: Object -> GameData -> Bool
-prop_testDrink obj gd
+prop_CoffeeDrunk:: Object -> GameData -> Bool
+prop_CoffeeDrunk obj gd
  | carrying gd fullmug && (obj == mug || obj == coffeepot) = caffeinated updatedGD && carrying updatedGD mug
  | otherwise = gd == updatedGD
  where updatedGD = fst(drink obj gd)
 
-prop_testDress:: GameData -> Bool
-prop_testDress gd 
+prop_userDressed:: GameData -> Bool
+prop_userDressed gd 
  | getCurrentRoom gd == wardrobe && carrying gd trainers && carrying gd jeans && carrying gd hoodie = dressed updatedGD
  | otherwise = dressed gd == dressed updatedGD
  where updatedGD= fst(dress gd)
 
-prop_testOpen :: GameData -> Bool
-prop_testOpen gd 
+prop_FrontDoorOpened :: GameData -> Bool
+prop_FrontDoorOpened gd 
  | caffeinated gd && dressed gd && locationId gd == "hall" = exits (getCurrentRoom updatedGD) ==[Exit "east" "To the east is a kitchen. " "kitchen", Exit "out" "You can go outside. " "street"]
  | otherwise = gd == updatedGD
  where updatedGD= fst(open gd)
 
-prop_testLights :: GameData -> Bool
-prop_testLights gd = lightsOn gd /= lightsOn updatedGD
+prop_LightsStateChanged :: GameData -> Bool
+prop_LightsStateChanged gd = lightsOn gd /= lightsOn updatedGD
  where updatedGD= fst(lights gd)
 
-prop_testBrush :: GameData -> Bool
-prop_testBrush gd 
+prop_TeethBrushed :: GameData -> Bool
+prop_TeethBrushed gd 
  | carrying gd toothbrush = brushed updatedGD == True
  | carrying gd toothbrush == False = brushed updatedGD == brushed gd
  where updatedGD= fst(brush gd)
@@ -102,9 +123,12 @@ run = do
     quickCheck prop_addObjectLength
     quickCheck prop_addToInventory
     quickCheck prop_removeFromInventory
-    quickCheck prop_testBrush
-    quickCheck prop_testLights
-    quickCheck prop_testOpen    
-    quickCheck (withMaxSuccess 1000 prop_testDress)
-    quickCheck prop_testDrink
-    quickCheck (withMaxSuccess 1000 prop_testPour)
+    quickCheck prop_TeethBrushed
+    quickCheck prop_LightsStateChanged
+    quickCheck prop_FrontDoorOpened    
+    quickCheck (withMaxSuccess 1000 prop_userDressed)
+    quickCheck prop_CoffeeDrunk
+    quickCheck prop_CoffeePoured
+    quickCheck prop_ObjectExamined
+    quickCheck prop_ObjectDropped
+    quickCheck prop_ObjectRetrieved

@@ -211,12 +211,10 @@ put obj state
 
 examine :: Action
 examine obj state
- | carrying state obj = (state, a)
- | objectHere obj (getCurrentRoom state) = (state, b)
+ | carrying state obj || objectHere obj (getCurrentRoom state) = (state, a)
  | otherwise = (state, "Item not in inventory or room")
  where
    a = objDesc obj
-   b = objDesc obj
 
 
 {- Pour the coffee. Obviously, this should only work if the player is carrying

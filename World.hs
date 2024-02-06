@@ -10,7 +10,7 @@ data Object = Obj { objName :: String,
 
 -- Make Object an instance of Show to customize its display
 instance Show Object where
-   show obj = objLongname obj
+   show = objLongname
 
 -- Define the Exit data type
 data Exit = Exit { exitDir :: String,
@@ -57,8 +57,8 @@ instance Show Room where
              showInv' (x:xs) = show x ++ ", " ++ showInv' xs
 
 -- Return a string representation of the room without displaying objects when lights are off
-hideInv :: Room -> String 
-hideInv (Room desc exits objs) = desc ++ "\n" ++ concatMap exitDesc exits ++ "\n\nLights are off, you cannot see anything."           
+hideInv :: Room -> String
+hideInv (Room desc exits objs) = desc ++ "\n" ++ concatMap exitDesc exits ++ "\n\nLights are off, you cannot see anything."
 
 -- Make GameData an instance of Show to customize its display
 instance Show GameData where
@@ -97,7 +97,7 @@ kitchen = Room "You are in the kitchen. "
                 Exit "west" "To the west is a hallway. " "hall"]
                [coffeepot]
 
-hall = Room "You are in the hallway. The front door is closed. " 
+hall = Room "You are in the hallway. The front door is closed. "
             [Exit "east" "To the east is the kitchen. " "kitchen",
              Exit "up" "Up the stairs is the bedroom. " "bedroom"]
             [trainers]

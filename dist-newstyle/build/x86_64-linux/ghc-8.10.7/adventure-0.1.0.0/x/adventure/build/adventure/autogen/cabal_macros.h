@@ -11,6 +11,28 @@
   (major1) == 0 && (major2) == 1 && (minor) <= 0)
 #endif /* MIN_VERSION_adventure */
 
+/* package QuickCheck-2.14.3 */
+#ifndef VERSION_QuickCheck
+#define VERSION_QuickCheck "2.14.3"
+#endif /* VERSION_QuickCheck */
+#ifndef MIN_VERSION_QuickCheck
+#define MIN_VERSION_QuickCheck(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  14 || \
+  (major1) == 2 && (major2) == 14 && (minor) <= 3)
+#endif /* MIN_VERSION_QuickCheck */
+
+/* package aeson-2.2.1.0 */
+#ifndef VERSION_aeson
+#define VERSION_aeson "2.2.1.0"
+#endif /* VERSION_aeson */
+#ifndef MIN_VERSION_aeson
+#define MIN_VERSION_aeson(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  2 || \
+  (major1) == 2 && (major2) == 2 && (minor) <= 1)
+#endif /* MIN_VERSION_aeson */
+
 /* package base-4.14.3.0 */
 #ifndef VERSION_base
 #define VERSION_base "4.14.3.0"
@@ -21,6 +43,28 @@
   (major1) == 4 && (major2) <  14 || \
   (major1) == 4 && (major2) == 14 && (minor) <= 3)
 #endif /* MIN_VERSION_base */
+
+/* package bytestring-0.10.12.0 */
+#ifndef VERSION_bytestring
+#define VERSION_bytestring "0.10.12.0"
+#endif /* VERSION_bytestring */
+#ifndef MIN_VERSION_bytestring
+#define MIN_VERSION_bytestring(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  10 || \
+  (major1) == 0 && (major2) == 10 && (minor) <= 12)
+#endif /* MIN_VERSION_bytestring */
+
+/* package directory-1.3.6.0 */
+#ifndef VERSION_directory
+#define VERSION_directory "1.3.6.0"
+#endif /* VERSION_directory */
+#ifndef MIN_VERSION_directory
+#define MIN_VERSION_directory(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  3 || \
+  (major1) == 1 && (major2) == 3 && (minor) <= 6)
+#endif /* MIN_VERSION_directory */
 
 /* package haskeline-0.8.2 */
 #ifndef VERSION_haskeline
@@ -33,16 +77,16 @@
   (major1) == 0 && (major2) == 8 && (minor) <= 2)
 #endif /* MIN_VERSION_haskeline */
 
-/* package random-1.2.1.1 */
-#ifndef VERSION_random
-#define VERSION_random "1.2.1.1"
-#endif /* VERSION_random */
-#ifndef MIN_VERSION_random
-#define MIN_VERSION_random(major1,major2,minor) (\
-  (major1) <  1 || \
-  (major1) == 1 && (major2) <  2 || \
-  (major1) == 1 && (major2) == 2 && (minor) <= 1)
-#endif /* MIN_VERSION_random */
+/* package parsec-3.1.14.0 */
+#ifndef VERSION_parsec
+#define VERSION_parsec "3.1.14.0"
+#endif /* VERSION_parsec */
+#ifndef MIN_VERSION_parsec
+#define MIN_VERSION_parsec(major1,major2,minor) (\
+  (major1) <  3 || \
+  (major1) == 3 && (major2) <  1 || \
+  (major1) == 3 && (major2) == 1 && (minor) <= 14)
+#endif /* MIN_VERSION_parsec */
 
 /* tool gcc-11 */
 #ifndef TOOL_VERSION_gcc

@@ -78,14 +78,6 @@ repl state = do
                         return state'
                   else repl state'
 
-{-do outputStrLn (show state)
-                maybeCmd <- getInputLine "What now? "
-                case maybeCmd of
-                  Nothing -> repl state
-                  Just line -> do
-                     (state', msg) <- process state (tokenizeWords line)
-                     outputStrLn msg-}
-
 main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()
 

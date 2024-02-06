@@ -29,20 +29,33 @@ openingMessage = "\nYou have woken up. Complete the following tasks to win the g
 darkMessage = "You hit your head, why would you try and wonder around in the dark?"
 
 -- Given a game state and user input, return a new game state and a message for the user
-process :: GameData -> [String] -> IO (GameData, String)
+process :: GameData -> [String] -> IO GameData
 process state [cmd,arg] = case actions cmd of
                               Just fn -> case objectOptions arg of 
-                                    Just obj -> fn obj state 
-                                    Nothing -> makeIO (state, "I don't understand") 
+                                    Just obj -> handleGameUpdate (fn obj state)
+                                    Nothing -> handleGameUpdate (state, "I don't understand")
                               Nothing -> case moves cmd of 
                                     Just fn -> case directions arg of 
-                                          Just dir -> fn dir state 
-                                          Nothing -> makeIO (state, "I don't understand") 
-                                    Nothing -> makeIO (state, "I don't understand") 
+                                          Just dir -> handleGameUpdate (fn dir state)
+                                          Nothing -> handleGameUpdate (state, "I don't understand")
+                                    Nothing -> handleGameUpdate (state, "I don't understand")
 process state [cmd]     = case commands cmd of
-                            Just fn -> fn state
-                            Nothing -> makeIO (state, "I don't understand")
-process state _ = makeIO (state, "I don't understand")
+                            Just fn -> handleGameUpdate (fn state)
+                            Nothing -> case ioCommands cmd of
+                              Just fn -> do
+                                    (state',str) <- fn state
+                                    putStrLn str
+                                    return state'
+                              Nothing -> handleGameUpdate (state, "I don't understand")
+process state _ = do 
+      putStrLn "I don't understand"
+      return state 
+
+handleGameUpdate :: (GameData,String) -> IO GameData
+handleGameUpdate (state, str) = do
+      putStrLn str
+      return state
+
 
 -- Read-Eval-Print Loop for the game
 repl :: GameData -> InputT IO GameData
@@ -53,8 +66,7 @@ repl state = do
       case maybeCmd of
             Nothing -> repl state
             Just line -> do
-                  (state', msg) <- liftIO (process state (tokenizeWords line))
-                  outputStrLn msg
+                  state' <- liftIO (process state (tokenizeWords line))
                   -- Check various game outcomes and display appropriate messages
                   if (won state') then do 
                         outputStrLn winmessage

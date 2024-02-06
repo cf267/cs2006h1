@@ -64,3 +64,8 @@ run = do
     quickCheck prop_addObject
     quickCheck prop_addObjectLength
     quickCheck prop_addToInventory
+    quickCheck prop_testBrush
+    quickCheck prop_testLights
+    quickCheck prop_testOpen    
+    quickCheck prop_testDress
+    quickCheck prop_testDrink

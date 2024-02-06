@@ -41,6 +41,7 @@ data GameData = GameData { locationId :: String,  -- where player is
                            brushed :: Bool,          -- teeth have been brushed
                            gameDark :: Bool          -- lights are turned on
                          }
+   deriving Eq
 
 -- Check if the player has won
 won :: GameData -> Bool
@@ -64,9 +65,10 @@ instance Show GameData where
    show gd = if lightsOn gd then show (getCurrentRoom gd) else hideInv (getCurrentRoom gd)
 
 -- Define types for game actions
-type Action  = Object -> GameData -> IO (GameData, String)
-type Move = Direction -> GameData -> IO (GameData, String)
-type Command = GameData -> IO (GameData, String)
+type Action  = Object -> GameData -> (GameData, String)
+type Move = Direction -> GameData -> (GameData, String)
+type Command = GameData -> (GameData, String)
+type IOCommand = GameData -> IO (GameData, String)
 
 -- Define various game objects
 mug, fullmug, coffeepot, keys, laptop, toothbrush, jeans, trainers, hoodie :: Object

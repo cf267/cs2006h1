@@ -1,8 +1,9 @@
 module Actions where
 
 import World
-import Data.List
-import SaveLoad
+
+import Data.List ( find )
+import SaveLoad ( loadFile, saveToFile )
 
 actions :: String -> Maybe Action
 actions "get"     = Just get

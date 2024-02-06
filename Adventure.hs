@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Main where
@@ -7,14 +6,14 @@ import World
 import Actions
 import Parsing
 
-import System.Console.Haskeline
-import Control.Monad
+import System.Console.Haskeline (defaultSettings, getInputLine, outputStrLn, runInputT, InputT)
+import Control.Monad ()
 import Control.Monad.IO.Class (liftIO)
-import System.IO
-import System.Exit
+import System.IO ()
+import System.Exit ()
 
-import Test.QuickCheck
-import Test.QuickCheck.All
+import Test.QuickCheck (Gen, elements, forAll, quickCheck)
+import Test.QuickCheck.All ()
 
 winmessage = "Congratulations, you have made it out of the house.\n" ++
              "Now go to your lectures..."
@@ -77,6 +76,14 @@ repl state = do
                         outputStrLn darkMessage
                         return state'
                   else repl state'
+
+{-do outputStrLn (show state)
+                maybeCmd <- getInputLine "What now? "
+                case maybeCmd of
+                  Nothing -> repl state
+                  Just line -> do
+                     (state', msg) <- process state (tokenizeWords line)
+                     outputStrLn msg-}
 
 main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()

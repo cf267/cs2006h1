@@ -1,5 +1,6 @@
 module World where
-import Data.List
+
+import Data.List (find)
 
 data Object = Obj { objName :: String,
                     objLongname :: String,

@@ -10,23 +10,21 @@ import qualified Data.Aeson.Types as A (Parser)
 import qualified Data.ByteString.Lazy.Char8 as C
 import Data.Aeson.Key (fromString)
 
+{-Function to load a previously saved game state. Prompts user for filename of file to load. -}
 
 loadFile :: GameData -> IO (GameData, String)
 loadFile gd = do
     putStr "Name of file to load: "
-    -- Flush the standard output buffer
-    hFlush stdout  
-    -- Disable buffering for standard input
+    hFlush stdout                                   -- Flush the standard output buffer + Disable buffering for standard input
     hSetBuffering stdin NoBuffering
     filename <- getLine
-    -- Revert standard input buffering to its original state (optional)
-    hSetBuffering stdin $ BlockBuffering Nothing
+    hSetBuffering stdin $ BlockBuffering Nothing    -- Revert standard input buffering to its original state
 
     let filePath = "./savedGames/" ++ filename
     exists <- doesFileExist filePath
     if exists then
         do fileContents <- readFile filePath
-           case eitherDecode (C.pack fileContents) :: Either String GameData of
+           case eitherDecode (C.pack fileContents) :: Either String GameData of         -- Try parsing JSON from file
                 Left err -> return (gd, "Invalid file")
                 Right gameData -> return (gameData, "Successfully loaded game state from " ++ filename)
     else
@@ -37,20 +35,22 @@ evalBool :: String -> Bool
 evalBool "True" = True
 evalBool "False" = False
 
+{- Parser to parse GameData record from JSON string -}
+
 instance FromJSON GameData where
     parseJSON = withObject "GameData" $ \v -> do
-        locationId <- v .: (fromString "locationId")
-        world <- v .: (fromString "world") >>= traverse parseWorldTuple
-        inventory <- v .: (fromString "inventory") >>= traverse parseJSON
-        poured <- evalBool <$> v .: (fromString "poured")
-        caffeinated <- evalBool <$> v .: (fromString "caffeinated")
-        lightsOn <- evalBool <$> v .: (fromString "lightsOn")
-        dressed <- evalBool <$> v .: (fromString "dressed")
-        finished <- evalBool <$> v .: (fromString "finished")
-        gotKeys <- evalBool <$> v .: (fromString "gotKeys")
-        brushed <- evalBool <$> v .: (fromString "brushed")
-        gameDark <- evalBool <$> v .: (fromString "gameDark")
-        return $ GameData {
+        locationId <- v .: fromString "locationId"                          -- parses string value from 'locationId'
+        world <- v .: fromString "world" >>= traverse parseWorldTuple       -- parses list of strings from 'world'/'inventory'
+        inventory <- v .: fromString "inventory" >>= traverse parseJSON     -- then passes them to corresponding parsers 
+        poured <- evalBool <$> v .: fromString "poured"                     -- parses string from 'poured'...'gameDark'
+        caffeinated <- evalBool <$> v .: fromString "caffeinated"           -- then uses evalBool to determine boolean value
+        lightsOn <- evalBool <$> v .: fromString "lightsOn"
+        dressed <- evalBool <$> v .: fromString "dressed"
+        finished <- evalBool <$> v .: fromString "finished"
+        gotKeys <- evalBool <$> v .: fromString "gotKeys"
+        brushed <- evalBool <$> v .: fromString "brushed"
+        gameDark <- evalBool <$> v .: fromString "gameDark"
+        return $ GameData {                                                 -- return GameData record
             locationId = locationId,
             world = world,
             inventory = inventory,
@@ -64,64 +64,70 @@ instance FromJSON GameData where
             gameDark = gameDark
         }
 
+{- Parser to parse Room record from JSON string -}
+
 instance FromJSON Room where
-  parseJSON = withObject "Room" $ \v -> do
-    roomDesc <- v .: (fromString "roomDesc")
-    exits <- v .: (fromString "exits") >>= parseJSON
-    objects <- v .: (fromString "objects") >>= parseJSON
-    return Room { 
+  parseJSON = withObject "Room" $ \v -> do                  
+    roomDesc <- v .: fromString "roomDesc"                  -- parses string value from 'roomDesc'
+    exits <- v .: fromString "exits" >>= parseJSON          -- parses list of string exit and object records and 
+    objects <- v .: fromString "objects" >>= parseJSON      -- passes them to corresponding parsers
+    return Room {                                           -- returns Room record
         roomDesc = roomDesc,
         exits = exits,
         objects = objects
     }
 
+{- Parser to parse Exit record from JSON string -}
+
 instance FromJSON Exit where
   parseJSON = withObject "Exit" $ \v -> do
-    exitDir <- v .: (fromString "exitDir")
-    exitDesc <- v .: (fromString "exitDesc")
-    room <- v .: (fromString "room")
-    return Exit { 
+    exitDir <- v .: fromString "exitDir"        -- parses string values from 'exitDir', 'exitDesc' and 'room'
+    exitDesc <- v .: fromString "exitDesc"
+    room <- v .: fromString "room"
+    return Exit {                               -- returns Exit record
         exitDir = exitDir,
         exitDesc = exitDesc,
         room = room 
     }
 
+{- Parser to parse Object record from JSON string -}
+
 instance FromJSON World.Object where
   parseJSON = withObject "Object" $ \v -> do
-    objName <- v .: (fromString "objName")
-    objLongname <- v .: (fromString "objLongname")
-    objDesc <- v .: (fromString "objDesc")
-    return Obj { 
+    objName <- v .: fromString "objName"                -- parses string values from 'objName', 'objLongname', and 'objDesc'
+    objLongname <- v .: fromString "objLongname"
+    objDesc <- v .: fromString "objDesc"
+    return Obj {                                        -- returns Obj record
         objName = objName,
         objLongname = objLongname,
         objDesc = objDesc 
     }
 
+{- Parser to parse tuple of (GameData,String) from JSON string -}
+
 parseWorldTuple :: Value -> A.Parser (String, Room)
 parseWorldTuple = withObject "WorldTuple" $ \v -> do
-    room_name <- v .: (fromString "roomId")
-    room <- v .: (fromString "room")
-    return (room_name, room)
+    room_name <- v .: fromString "roomId"
+    room <- v .: fromString "room"
+    return (room_name, room)            -- returns tuple (GameData,String)
 
 
-saveToFile :: GameData -> IO (String)
+saveToFile :: GameData -> IO String
 saveToFile gd = do 
     putStr "Save under filename: "
-    -- Flush the standard output buffer
-    hFlush stdout 
-    -- Disable buffering for standard input
-    hSetBuffering stdin NoBuffering
+    hFlush stdout                                       -- Flush the standard output buffer
+    hSetBuffering stdin NoBuffering                     -- Disable buffering for standard input
     filename <- getLine
-    -- Revert standard input buffering to its original state (optional)
-    hSetBuffering stdin $ BlockBuffering Nothing
+    hSetBuffering stdin $ BlockBuffering Nothing        -- Revert standard input buffering to its original state
 
-    createDirectoryIfMissing True "savedGames"
+    createDirectoryIfMissing True "savedGames"          -- find / create directory to save file into
     let filePath = "./savedGames/" ++ filename
     let content = stringifyGameData gd
 
     writeFile filePath content
     return ("Successfully wrote to " ++ filename)
 
+{- function to convert GameData record to string -}
 
 stringifyGameData :: GameData -> String
 stringifyGameData gd =
@@ -130,14 +136,16 @@ stringifyGameData gd =
     "\",\"lightsOn\":\"" ++ show (lightsOn gd) ++ "\",\"dressed\":\"" ++ show (dressed gd) ++ "\",\"finished\":\"" ++ show (finished gd) ++
     "\",\"gotKeys\":\"" ++ show (gotKeys gd) ++ "\",\"brushed\":\"" ++ show (brushed gd) ++ "\",\"gameDark\":\"" ++ show (gameDark gd) ++ "\"}"
     where
-        worldString = foldr (\(n,r) a -> concatenateStrings ("{\"roomId\":\"" ++ n ++ "\",\"room\":" ++ (stringifyRoom r) ++ "}") a) "" (world gd)
+        worldString = foldr (\(n,r) a -> concatenateStrings ("{\"roomId\":\"" ++ n ++ "\",\"room\":" ++ stringifyRoom r ++ "}") a) "" (world gd)
         inventoryString = foldr (\o a -> concatenateStrings (stringifyObject o) a) "" (inventory gd)
 
+{- function to convert Object record to string -}
 
 stringifyObject :: World.Object -> String
 stringifyObject o =
     "{\"objName\":\"" ++ objName o ++ "\",\"objLongname\":\"" ++ objLongname o ++ "\",\"objDesc\":\"" ++ objDesc o ++ "\"}"
 
+{- function to convert Room record to string -}
 
 stringifyRoom :: Room -> String
 stringifyRoom room =
@@ -146,10 +154,13 @@ stringifyRoom room =
         exitsString = foldr (\r a -> concatenateStrings (stringifyExit r) a) "" (exits room)
         objectsString = foldr (\r a -> concatenateStrings (stringifyObject r) a) "" (objects room)
 
+{- function to convert Exit record to string -}
 
 stringifyExit :: Exit -> String
 stringifyExit e =
     "{\"exitDir\":\"" ++ exitDir e ++ "\",\"exitDesc\":\"" ++ exitDesc e ++ "\",\"room\":\"" ++ room e ++ "\"}"
+
+{- function to append String to stringified list -}
 
 concatenateStrings :: String -> String -> String
 concatenateStrings r a | a == "" = r

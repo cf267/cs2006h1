@@ -79,7 +79,7 @@ bedroom, kitchen, hall, street, livingroom, wardrobe, bathroom :: Room
 bedroom = Room "You are in the bedroom. "
                [Exit "north" "To the north is a bathroom. " "bathroom",
                 Exit "east" "To the east is the wardrobe. " "wardrobe",
-                Exit "down" "Down the stairs is the hallway. " "hallway"]
+                Exit "down" "Down the stairs is the hallway. " "hall"]
                [mug, laptop, jeans]
 
 kitchen = Room "You are in the kitchen. "

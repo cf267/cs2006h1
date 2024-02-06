@@ -1,11 +1,9 @@
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE FlexibleInstances #-}
-
 module Main where
 
 import World
 import Actions
 import Parsing
+import Test
 
 import System.Console.Haskeline
 import Control.Monad
@@ -13,8 +11,6 @@ import Control.Monad.IO.Class (liftIO)
 import System.IO
 import System.Exit
 
-import Test.QuickCheck
-import Test.QuickCheck.All
 
 winmessage = "Congratulations, you have made it out of the house.\n" ++
              "Now go to your lectures..."
@@ -81,28 +77,6 @@ repl state = do
 main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()
 
-prop_validMove :: (Direction, Room) -> Bool
-prop_validMove (dir, rm) = case move dir rm of
-                        Just _ -> True
-                        Nothing -> False
-
-prop_objectFound :: (Object, Room) -> Bool
-prop_objectFound (obj, rm) 
- | objectExists = True
- | otherwise = False
- where 
-   objectExists = objectHere obj rm
-
-validMove :: Gen (Direction, Room)
-validMove = elements [(North, bedroom), (East, bedroom), (Down, bedroom), (East, hall), (Up, hall), (South, kitchen), (West, kitchen), (North, livingroom), (South, bathroom), (West, wardrobe)]
-
-validRoomObject :: Gen (Object, Room)
-validRoomObject = elements [(mug, bedroom), (laptop, bedroom), (jeans, bedroom), (trainers, hall), (coffeepot, kitchen), (keys, livingroom), (hoodie, livingroom), (toothbrush, bathroom)]
-
-runTests = do 
-           quickCheck (forAll validMove prop_validMove)
-           quickCheck (forAll validRoomObject prop_objectFound)
-
 wordParser :: Parser [String]
 wordParser = many (token ident)
 
@@ -110,3 +84,5 @@ tokenizeWords :: String -> [String]
 tokenizeWords input = case parse wordParser input of
   [(words, _)] -> words
   _            -> []
+
+runTests = Test.run

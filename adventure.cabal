@@ -59,6 +59,8 @@ executable adventure
                        World
                        Parsing
                        SaveLoad
+                       Arbitraries
+                       Test
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:

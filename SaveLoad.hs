@@ -1,26 +1,21 @@
 module SaveLoad where
 
 import World
-import Data.List
-import Data.Void
-import Text.ParserCombinators.Parsec.Char
-import Text.Parsec.String (Parser)
-import Text.Parsec (try, manyTill, ParseError, between, sepBy, parse, (<|>), eof, parseTest)
-import System.IO
-import System.Directory
-import Control.Monad.IO.Class
-import Text.Read
-import Debug.Trace (trace)
-import Data.Aeson
+
+import System.IO (hFlush, hSetBuffering, stdin, stdout, BufferMode(BlockBuffering, NoBuffering))
+import System.Directory (createDirectoryIfMissing, doesFileExist)
+
+import Data.Aeson (eitherDecode, (.:), withObject, FromJSON(parseJSON), Value)
 import qualified Data.Aeson.Types as A (Parser)
 import qualified Data.ByteString.Lazy.Char8 as C
-import Data.Aeson.Key
+import Data.Aeson.Key (fromString)
 
 
 loadFile :: GameData -> IO (GameData, String)
 loadFile gd = do
     putStr "Name of file to load: "
-    hFlush stdout  -- Flush the standard output buffer
+    -- Flush the standard output buffer
+    hFlush stdout  
     -- Disable buffering for standard input
     hSetBuffering stdin NoBuffering
     filename <- getLine
@@ -32,7 +27,7 @@ loadFile gd = do
     if exists then
         do fileContents <- readFile filePath
            case eitherDecode (C.pack fileContents) :: Either String GameData of
-                Left err -> return (gd, show err)
+                Left err -> return (gd, "Invalid file")
                 Right gameData -> return (gameData, "Successfully loaded game state from " ++ filename)
     else
         return (gd, "File does not exist")
@@ -112,7 +107,8 @@ parseWorldTuple = withObject "WorldTuple" $ \v -> do
 saveToFile :: GameData -> IO (String)
 saveToFile gd = do 
     putStr "Save under filename: "
-    hFlush stdout  -- Flush the standard output buffer
+    -- Flush the standard output buffer
+    hFlush stdout 
     -- Disable buffering for standard input
     hSetBuffering stdin NoBuffering
     filename <- getLine

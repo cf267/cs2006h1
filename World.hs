@@ -41,6 +41,7 @@ data GameData = GameData { locationId :: String,  -- where player is
                            brushed :: Bool,          -- teeth have been brushed
                            gameDark :: Bool          -- lights are turned on
                          }
+   deriving Eq
 
 -- Check if the player has won
 won :: GameData -> Bool

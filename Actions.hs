@@ -288,7 +288,8 @@ dress state
 
 open :: Command
 open state
- | caffeinated state && dressed state = (newState, "Door opened")
+ | caffeinated state && dressed state && locationId state == "hall" = (newState, "Door opened")
+ | caffeinated state && dressed state = (state, "You can't open the door when you're not in the hallway")
  | caffeinated state = (state, "You need to be dressed to open the door")
  | dressed state = (state, "You need coffee to open the door")
  | otherwise = (state, "You need clothes and coffee to open the door")

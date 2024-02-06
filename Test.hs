@@ -49,9 +49,11 @@ prop_addToInventory gd obj = length (inventory (addInv gd obj)) == originalLengt
     originalLength = length (inventory gd)
 
 prop_removeFromInventory :: GameData -> Object -> Bool
-| obj `elem` (inventory gd) = length (inventory (removeInv gd obj)) == originalLength - 1
-| otherwise = length (inventory (removeInv gd obj)) == originalLength
+prop_removeFromInventory gd obj
+ | obj `elem` (inventory gd) = length (inventory newInv) == originalLength - 1
+ | otherwise = length (inventory newInv) == originalLength
  where 
+    newInv = removeInv gd obj
     originalLength = length (inventory gd)
 
 prop_testDrink:: Object -> GameData -> Bool
@@ -64,7 +66,7 @@ prop_testDress:: GameData -> Bool
 prop_testDress gd 
  | getCurrentRoom gd == wardrobe && carrying gd trainers && carrying gd jeans && carrying gd hoodie = dressed updatedGD
  | otherwise = dressed gd == dressed updatedGD
- where updatedGD= fst(open gd)
+ where updatedGD= fst(dress gd)
 
 prop_testOpen :: GameData -> Bool
 prop_testOpen gd 
@@ -93,6 +95,7 @@ run = do
     quickCheck prop_addObject
     quickCheck prop_addObjectLength
     quickCheck prop_addToInventory
+    quickCheck prop_removeFromInventory
     quickCheck prop_testBrush
     quickCheck prop_testLights
     quickCheck prop_testOpen    

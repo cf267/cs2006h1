@@ -19,7 +19,7 @@ generateInv n = vectorOf n arbitrary
 instance Arbitrary GameData where
     arbitrary = do 
         locationId <- elements [x | (x, _) <- gameworld]
-        inventory <- generateInv 2
+        inventory <- generateInv 5
         poured <- arbitrary :: Gen Bool
         caffeinated <- arbitrary :: Gen Bool
         lightsOn <- arbitrary :: Gen Bool

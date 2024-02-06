@@ -25,10 +25,18 @@ prop_objectFoundInRoom obj rm =
             
 --  | obj `elem` (objects rm) then length (objects (removeObject obj rm)) == x 
 
-testCarrying :: GameData -> Bool
-testCarrying gd o = carrying gd o 
+prop_testLights :: GameData -> Bool
+prop_testLights gd = lightsOn gd /= lightsOn updatedGD
+ where updatedGD= fst(lights gd)
 
+prop_testBrush :: GameData -> Bool
+prop_testBrush gd 
+ | carrying gd toothbrush = brushed updatedGD == True
+ | carrying gd toothbrush == False = brushed updatedGD == brushed gd
+ where updatedGD= fst(brush gd)
 
 run = do 
     quickCheck prop_correctMoveReturn
     quickCheck prop_objectFoundInRoom
+    quickCheck prop_testBrush
+    quickCheck prop_testLights

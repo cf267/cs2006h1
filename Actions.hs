@@ -105,9 +105,6 @@ findObj o ds = case find (\object -> object == o) ds of
             
 {- Use 'findObj' to find an object in a room description -}
 
-objectData :: Object -> Room -> Object
-objectData o rm = findObj o (objects rm)
-
 
 {- Given a game state and a room id, replace the old room information with
    new data. If the room id does not already exist, add it. -}
@@ -120,7 +117,7 @@ updateRoom gd rmid rmdata | length (world gd) == 0 = gd {world = [(rmid, rmdata)
    room and add it to the player's inventory -}
 
 addInv :: GameData -> Object -> GameData
-addInv gd obj = gd {inventory = inventory gd ++ [objectData obj (getCurrentRoom gd)]}
+addInv gd obj = gd {inventory = inventory gd ++ [obj]}
 
 
 {- Given a game state and an object id, remove the object from the
@@ -201,7 +198,7 @@ put obj state
  | otherwise = makeIO (state, "Object not in inventory")
  where
    d = getCurrentRoom state
-   c = addObject (findObj obj (inventory state)) d
+   c = addObject obj d
    b = updateRoom state (locationId state) c
    a = removeInv b obj
    e = dropKeys a
@@ -217,8 +214,8 @@ examine obj state
  | objectHere obj (getCurrentRoom state) = makeIO (state, b)
  | otherwise = makeIO (state, "Item not in inventory or room")
  where
-   a = objDesc (findObj obj (inventory state))
-   b = objDesc (objectData obj (getCurrentRoom state))
+   a = objDesc obj
+   b = objDesc obj
 
 
 {- Pour the coffee. Obviously, this should only work if the player is carrying

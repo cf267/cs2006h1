@@ -6,6 +6,7 @@ import World
 
 import Test.QuickCheck
 import Test.QuickCheck.All
+import Data.List (find)
 
 
 prop_correctMoveReturn :: Direction -> Room -> Bool
@@ -43,18 +44,69 @@ prop_addObject obj rm = obj `elem` objects(addObject obj rm)
 
 -- prop_updateRoom :: GameData -> String -> Room
 
-prop_addToInventory :: GameData -> Object -> Bool
-prop_addToInventory gd obj = length (inventory (addInv gd obj)) == originalLength + 1
+prop_addToInventoryLength :: GameData -> Object -> Bool
+prop_addToInventoryLength gd obj = length (inventory (addInv gd obj)) == originalLength + 1
  where 
     originalLength = length (inventory gd)
 
-prop_removeFromInventory :: GameData -> Object -> Bool
-prop_removeFromInventory gd obj
- | obj `elem` (inventory gd) = length (inventory newInv) == originalLength - 1
- | otherwise = length (inventory newInv) == originalLength
+prop_addToInventory :: GameData -> Object -> Bool
+prop_addToInventory gd obj = obj `elem` newInv
  where 
-    newInv = removeInv gd obj
+    newInv = inventory (addInv gd obj)
+
+prop_removeFromInventoryLength :: GameData -> Object -> Bool
+prop_removeFromInventoryLength gd obj
+ | obj `elem` (inventory gd) = length newInv == originalLength - 1
+ | otherwise = length newInv == originalLength
+ where 
+    newInv = inventory (removeInv gd obj)
     originalLength = length (inventory gd)
+
+prop_removeFromInventory :: GameData -> Object -> Bool
+prop_removeFromInventory gd obj = obj `notElem` newInv
+ where 
+    newInv = inventory (removeInv gd obj)
+    originalLength = length (inventory gd)
+
+prop_keyStateChangedToTrue :: GameData -> Bool
+prop_keyStateChangedToTrue gd = gotKeys (collectKeys gd) == True
+
+prop_keyStateChangedToFalse :: GameData -> Bool
+prop_keyStateChangedToFalse gd = gotKeys (dropKeys gd) == False
+
+
+prop_moveToCorrectRoom :: Direction -> GameData -> Bool
+prop_moveToCorrectRoom dir state 
+ | not (lightsOn state) = gameDark (fst(go dir state))
+ | dir `elem` getListOfDirections = room correctExit == locationId (fst(go dir state))
+ | otherwise = state == fst(go dir state)
+ where 
+    getListOfDirections :: [Direction]
+    getListOfDirections = case map directions (map exitDir (exits (getCurrentRoom state))) of 
+                            [Just x] -> [x]
+
+    correctExit :: Exit
+    correctExit = case find (\x -> getDirection x == dir) (exits (getCurrentRoom state)) of
+                    Just x -> x
+
+
+    getDirection :: Exit -> Direction 
+    getDirection x = case directions (exitDir x) of
+                    Just x -> x
+                    
+    -- getExits = map exitDir (exits (getCurrentRoom state))
+
+    
+
+-- the room that matches the location id
+-- the room name of the exit fpr that room that has the given direction 
+
+
+-- if the lights are on
+-- check if the current location of the new state is correct
+-- check if the current location is the exit of the old room with that direction 
+-- if the lights are off, check that it returns a new state with gameDark = true
+
 
 prop_ObjectRetrieved :: Object -> GameData -> Bool
 prop_ObjectRetrieved obj gd
@@ -121,8 +173,13 @@ run = do
     quickCheck prop_removeObject
     quickCheck prop_addObject
     quickCheck prop_addObjectLength
+    quickCheck prop_addToInventoryLength
     quickCheck prop_addToInventory
+    quickCheck prop_removeFromInventoryLength
     quickCheck prop_removeFromInventory
+    quickCheck prop_keyStateChangedToTrue
+    quickCheck prop_keyStateChangedToFalse
+    quickCheck prop_moveToCorrectRoom
     quickCheck prop_TeethBrushed
     quickCheck prop_LightsStateChanged
     quickCheck prop_FrontDoorOpened    

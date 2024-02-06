@@ -50,9 +50,10 @@ prop_addToInventory gd obj = length (inventory (addInv gd obj)) == originalLengt
 
 prop_removeFromInventory :: GameData -> Object -> Bool
 prop_removeFromInventory gd obj
- | obj `elem` (inventory gd) = length (inventory (removeInv gd obj)) == originalLength - 1
- | otherwise = length (inventory (removeInv gd obj)) == originalLength
+ | obj `elem` (inventory gd) = length (inventory newInv) == originalLength - 1
+ | otherwise = length (inventory newInv) == originalLength
  where 
+    newInv = removeInv gd obj
     originalLength = length (inventory gd)
 
 prop_testPour :: Object -> GameData -> Bool
@@ -100,7 +101,7 @@ run = do
     quickCheck prop_addObject
     quickCheck prop_addObjectLength
     quickCheck prop_addToInventory
-    -- quickCheck prop_removeFromInventory
+    quickCheck prop_removeFromInventory
     quickCheck prop_testBrush
     quickCheck prop_testLights
     quickCheck prop_testOpen    

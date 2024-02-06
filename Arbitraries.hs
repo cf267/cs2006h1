@@ -3,6 +3,7 @@ module Arbitraries where
 import World
 
 import Test.QuickCheck
+import Data.List (nub)
 
 instance Arbitrary Object where
     arbitrary = elements [mug, fullmug, coffeepot, laptop, toothbrush, jeans, hoodie, trainers, keys]
@@ -14,7 +15,7 @@ instance Arbitrary Direction where
     arbitrary = elements [North, South, East, West, Out, Up, Down]
 
 generateInv :: Int -> Gen [Object]
-generateInv n = vectorOf n arbitrary
+generateInv n =  nub <$> vectorOf n arbitrary
 
 instance Arbitrary GameData where
     arbitrary = do 

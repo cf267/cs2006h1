@@ -322,16 +322,22 @@ inv state = makeIO (state, showInv (inventory state))
          showInv' [x] = objLongname x
          showInv' (x:xs) = objLongname x ++ "\n" ++ showInv' xs
 
+-- Define a command 'quit' that sets the 'finished' flag to True, indicating the player wants to quit
 quit :: Command
 quit state = makeIO (state { finished = True }, "Bye bye")
 
+-- Define a command 'save' that attempts to save the game state to a file
 save :: Command
 save state = do
+   -- Try to save the game state to a file and get a success message
    successmessage <- saveToFile state
+   -- Return the updated game state and the success message
    return (state, successmessage)
 
+-- Define a command 'load' that attempts to load the game state from a file
 load :: Command
 load state = loadFile state
 
+-- Helper function 'makeIO' to lift a pure (non-IO) tuple into an IO monad
 makeIO :: (GameData, String) -> IO (GameData, String)
 makeIO (gd, s) = return (gd, s)

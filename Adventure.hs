@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-
 module Main where
 
 import World
@@ -15,15 +13,13 @@ import System.Exit ()
 import Test.QuickCheck (Gen, elements, forAll, quickCheck)
 import Test.QuickCheck.All ()
 
-winmessage = "Congratulations, you have made it out of the house.\n" ++
-             "Now go to your lectures..."
+-- Messages for different game outcomes
+winmessage = "Congratulations, you have made it out of the house.\nNow go to your lectures..."
 
-brushTeethMessage = "Congratulations, you have made it out of the house.\n" ++
-                   "But you forgot to brush your teeth! Now you have to go to lectures with stinky breath...."
+brushTeethMessage = "Congratulations, you have made it out of the house.\nBut you forgot to brush your teeth! Now you have to go to lectures with stinky breath...."
 
-losemessage = "NOO! you forgot your house keys and have been LOCKED OUTTTT!!\n" ++
-              "Well that the day ruined..."
-              
+losemessage = "NOO! you forgot your house keys and have been LOCKED OUTTTT!!\nWell, that's the day ruined..."
+
 openingMessage = "\nYou have woken up. Complete the following tasks to win the game: \n" ++
                  "- Find your clothes around the house and get dressed\n" ++
                  "- Drink some coffee\n" ++
@@ -31,11 +27,9 @@ openingMessage = "\nYou have woken up. Complete the following tasks to win the g
                  "- Collect your keys and laptop\n" ++
                  "- Leave the house for your lectures\n"
 
-darkMessage = "You hit your head, why would you try and wonder round in the dark?"
+darkMessage = "You hit your head, why would you try and wonder around in the dark?"
 
-{- Given a game state, and user input (as a list of words) return a 
-   new game state and a message for the user. -}
-
+-- Given a game state and user input, return a new game state and a message for the user
 process :: GameData -> [String] -> IO (GameData, String)
 process state [cmd,arg] = case actions cmd of
                               Just fn -> case objectOptions arg of 
@@ -51,18 +45,18 @@ process state [cmd]     = case commands cmd of
                             Nothing -> makeIO (state, "I don't understand")
 process state _ = makeIO (state, "I don't understand")
 
+-- Read-Eval-Print Loop for the game
 repl :: GameData -> InputT IO GameData
 repl state | finished state = return state
 repl state = do 
       outputStrLn (show state)
       maybeCmd <- getInputLine "What now? "
-      -- hFlush stdout
-      -- cmd <- getLine
       case maybeCmd of
             Nothing -> repl state
             Just line -> do
                   (state', msg) <- liftIO (process state (tokenizeWords line))
                   outputStrLn msg
+                  -- Check various game outcomes and display appropriate messages
                   if (won state') then do 
                         outputStrLn winmessage
                         return state'
@@ -77,17 +71,11 @@ repl state = do
                         return state'
                   else repl state'
 
-{-do outputStrLn (show state)
-                maybeCmd <- getInputLine "What now? "
-                case maybeCmd of
-                  Nothing -> repl state
-                  Just line -> do
-                     (state', msg) <- process state (tokenizeWords line)
-                     outputStrLn msg-}
-
+-- Main function to start the game
 main :: IO ()
 main = runInputT defaultSettings (repl initState) >> return ()
 
+-- Property-based testing functions
 prop_validMove :: (Direction, Room) -> Bool
 prop_validMove (dir, rm) = case move dir rm of
                         Just _ -> True
@@ -106,13 +94,16 @@ validMove = elements [(North, bedroom), (East, bedroom), (Down, bedroom), (East,
 validRoomObject :: Gen (Object, Room)
 validRoomObject = elements [(mug, bedroom), (laptop, bedroom), (jeans, bedroom), (trainers, hall), (coffeepot, kitchen), (keys, livingroom), (hoodie, livingroom), (toothbrush, bathroom)]
 
+-- Run QuickCheck tests
 runTests = do 
            quickCheck (forAll validMove prop_validMove)
            quickCheck (forAll validRoomObject prop_objectFound)
 
+-- Parser for separating words in input
 wordParser :: Parser [String]
 wordParser = many (token ident)
 
+-- Tokenize a string into a list of words
 tokenizeWords :: String -> [String]
 tokenizeWords input = case parse wordParser input of
   [(words, _)] -> words

@@ -25,8 +25,6 @@ prop_objectFoundInRoom obj rm =
             
 --  | obj `elem` (objects rm) then length (objects (removeObject obj rm)) == x 
 
-testCarrying :: GameData -> Bool
-testCarrying gd o = carrying gd o 
 
 
 run = do 

@@ -88,7 +88,9 @@ repl state = do
 {- Main function to start the game -}
 
 main :: IO ()
-main = runInputT defaultSettings (repl initState) >> return ()
+main = do
+      putStrLn openingMessage
+      runInputT defaultSettings (repl initState) >> return ()
 
 wordParser :: Parser [String]
 wordParser = many (token ident)

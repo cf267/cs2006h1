@@ -69,7 +69,7 @@ repl state = do
       case maybeCmd of
             Nothing -> repl state
             Just line -> do
-                  state' <- liftIO (process state (tokenizeWords line))
+                  state' <- liftIO (process state (tokeniseWords line))
 
                   if won state' && not (gotKeys state') then do
                         outputStrLn losemessage
@@ -95,8 +95,8 @@ wordParser = many (token ident)
 
 {- Tokenize a string into a list of words -}
 
-tokenizeWords :: String -> [String]
-tokenizeWords input = case parse wordParser input of
+tokeniseWords :: String -> [String]
+tokeniseWords input = case parse wordParser input of
   [(words, _)] -> words
   _            -> []
 

@@ -26,7 +26,7 @@ openingMessage = "\nYou have woken up. Complete the following tasks to win the g
                  "- Collect your keys and laptop\n" ++
                  "- Leave the house for your lectures\n"
 
-darkMessage = "You hit your head, why would you try and wonder around in the dark?"
+darkMessage = "You hit your head, why would you try and wander around in the dark?"
 
 {- Given a game state and user input, output message and return a new game state for the user -}
 process :: GameData -> [String] -> IO GameData
@@ -71,14 +71,14 @@ repl state = do
             Just line -> do
                   state' <- liftIO (process state (tokenizeWords line))
 
-                  if won state' then do                                     -- Check various game outcomes and display appropriate messages
-                        outputStrLn winmessage
-                        return state'
-                  else if won state' && not (gotKeys state') then do
+                  if won state' && not (gotKeys state') then do
                         outputStrLn losemessage
                         return state'
                   else if won state' && not (brushed state') then do
                         outputStrLn brushTeethMessage
+                        return state'
+                  else if won state' then do                                     -- Check various game outcomes and display appropriate messages
+                        outputStrLn winmessage
                         return state'
                   else if gameDark state' then do
                         outputStrLn darkMessage

@@ -45,7 +45,7 @@ data GameData = GameData { locationId :: String,  -- where player is
 
 -- Check if the player has won
 won :: GameData -> Bool
-won gd = locationId gd == "street" && gotKeys gd
+won gd = locationId gd == "street"
 
 -- Make Room an instance of Show to customize its display
 instance Show Room where

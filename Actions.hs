@@ -238,7 +238,7 @@ drink obj state
  | carrying state mug = (state, "Mug not filled with coffee")
  | otherwise = (state, "No mug in inventory")
  where
-   tempState = removeInv state mug
+   tempState = removeInv state fullmug
    newState = tempState { caffeinated = True, inventory = inventory tempState ++ [mug] }
 
 {-

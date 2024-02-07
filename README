@@ -1,3 +1,5 @@
+FROM WITHIN SRC DIRECTORY
+
 To run the game...
 1. install cabal
 2. run :

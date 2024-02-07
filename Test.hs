@@ -8,6 +8,7 @@ import Test.QuickCheck
 import Test.QuickCheck.All
 import Data.List (find)
 import Data.Bits (Bits(xor))
+import GHC.Float (geDouble)
 
 
 prop_correctMoveReturn :: Direction -> Room -> Bool
@@ -174,8 +175,7 @@ prop_TeethBrushed gd
  | carrying gd toothbrush = brushed updatedGD
  | not (carrying gd toothbrush) = brushed updatedGD == brushed gd
  where updatedGD= fst (brush gd)
-
-
+     
 run = do
     quickCheck prop_correctMoveReturn
     quickCheck prop_objectFoundInRoom
